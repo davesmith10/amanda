@@ -30,7 +30,26 @@ void cmd_newuser(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
         if (args[i] == "--username" && i + 1 < args.size()) {
             username = args[++i];
         } else if (args[i] == "--assert" && i + 1 < args.size()) {
-            assertions.push_back(args[++i]);
+            // Split on commas; prefix bare path scopes with "slc:"
+            std::string raw = args[++i];
+            size_t start = 0;
+            while (true) {
+                size_t comma = raw.find(',', start);
+                std::string tok = raw.substr(start,
+                    comma == std::string::npos ? std::string::npos : comma - start);
+                // Trim leading/trailing whitespace
+                {
+                    auto f = tok.find_first_not_of(" \t");
+                    tok = (f == std::string::npos) ? "" : tok.substr(f, tok.find_last_not_of(" \t") - f + 1);
+                }
+                if (!tok.empty()) {
+                    if (tok[0] == '/')
+                        tok = "slc:" + tok;
+                    assertions.push_back(tok);
+                }
+                if (comma == std::string::npos) break;
+                start = comma + 1;
+            }
         }
     }
 
@@ -157,6 +176,40 @@ void cmd_changepass(HttpClient& client, AmandaConfig& cfg, const Args& args) {
     std::string endpoint = "/users/" + username + "/password";
     client.post_json(endpoint, {{"password", pw1}});
     std::cout << "Password changed for " << username << ".\n";
+}
+
+// ---------------------------------------------------------------------------
+// deluser (admin only)
+// ---------------------------------------------------------------------------
+// Usage:
+//   amanda deluser --username <name>
+// ---------------------------------------------------------------------------
+void cmd_deluser(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    std::string username;
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == "--username" && i + 1 < args.size())
+            username = args[++i];
+    }
+
+    if (username.empty())
+        throw std::invalid_argument("deluser: --username is required");
+
+    auto resp = client.delete_("/users/" + username);
+    std::cout << "Deleted user " << resp.at("deleted").get<std::string>()
+              << " (trays=" << resp.at("trays").get<int>()
+              << ", secrets=" << resp.at("secrets").get<int>() << ")\n";
+}
+
+// ---------------------------------------------------------------------------
+// flush-all (admin only)
+// ---------------------------------------------------------------------------
+// Usage:
+//   amanda flush-all
+// ---------------------------------------------------------------------------
+void cmd_flush_all(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
+    auto resp = client.delete_("/admin/flush?confirm=flush");
+    std::cout << resp.at("message").get<std::string>() << "\n";
 }
 
 } // namespace amanda

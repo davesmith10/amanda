@@ -15,9 +15,12 @@ using Args = std::vector<std::string>;
 
 void cmd_login      (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_logout     (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_whoami     (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_newuser    (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_listuser   (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_changepass (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_deluser    (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_flush_all  (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_keygen     (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_trays      (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_tray       (HttpClient& client, AmandaConfig& cfg, const Args& args);

@@ -17,22 +17,27 @@ static void usage() {
         "  --insecure         Skip TLS certificate verification entirely (dev only)\n"
         "\n"
         "Commands:\n"
-        "  login      [--username <name>] [--token <base64>]\n"
+        "  login        [--username <name>] [--token <base64>]\n"
         "  logout\n"
-        "  newuser    --username <name> [--assert <scope> ...]\n"
+        "  whoami\n"
         "  listuser\n"
-        "  changepass [--username <name>]\n"
-        "  keygen     --alias <name> [--tray <level>] [--pg crystals]\n"
-        "  trays      [-v]\n"
-        "  tray       --alias <name> [--public]\n"
-        "  export-tray --alias <name> [--to-file <path>]\n"
+        "  changepass   [--username <name>]\n"
+        "  keygen       --alias <name> [--tray <level>] [--pg crystals]\n"
+        "  trays        [-v]\n"
+        "  tray         --alias <name> [--public]\n"
+        "  export-tray  --alias <name> [--to-file <path>]\n"
         "  mark-default --alias <name>\n"
-        "  create     <path> [--from-file <f>|--from-text <t>] [--mimetype <m>] [--tray <a>]\n"
-        "  read       <path> [--to-file <path>]\n"
-        "  meta       <path>\n"
-        "  secrets    [--prefix <prefix>]\n"
-        "  link       --target <path> --link <path>\n"
-        "  health\n";
+        "  create       <path> [--from-file <f>|--from-text <t>] [--mimetype <m>] [--tray <a>]\n"
+        "  read         <path> [--to-file <path>]\n"
+        "  meta         <path>\n"
+        "  secrets      [--prefix <prefix>]\n"
+        "  link         --target <path> --link <path>\n"
+        "  health\n"
+        "\n"
+        "Admin commands:\n"
+        "  newuser      --username <name> [--assert <scope> ...]\n"
+        "  deluser      --username <name>\n"
+        "  flush-all\n";
 }
 
 int main(int argc, char** argv) {
@@ -74,9 +79,12 @@ int main(int argc, char** argv) {
 
         if      (command == "login")        amanda::cmd_login(client, cfg, cmd_args);
         else if (command == "logout")       amanda::cmd_logout(client, cfg, cmd_args);
+        else if (command == "whoami")       amanda::cmd_whoami(client, cfg, cmd_args);
         else if (command == "newuser")      amanda::cmd_newuser(client, cfg, cmd_args);
         else if (command == "listuser")     amanda::cmd_listuser(client, cfg, cmd_args);
         else if (command == "changepass")   amanda::cmd_changepass(client, cfg, cmd_args);
+        else if (command == "deluser")      amanda::cmd_deluser(client, cfg, cmd_args);
+        else if (command == "flush-all")    amanda::cmd_flush_all(client, cfg, cmd_args);
         else if (command == "keygen")       amanda::cmd_keygen(client, cfg, cmd_args);
         else if (command == "trays")        amanda::cmd_trays(client, cfg, cmd_args);
         else if (command == "tray")         amanda::cmd_tray(client, cfg, cmd_args);
