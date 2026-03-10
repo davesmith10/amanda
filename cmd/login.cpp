@@ -81,8 +81,13 @@ void cmd_logout(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/)
 // ---------------------------------------------------------------------------
 // Reads the local token file and prints the logged-in username, assertions,
 // and expiry time. No server contact required.
+// --verbose: also hex-dumps the raw token bytes.
 // ---------------------------------------------------------------------------
-void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
+void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    bool verbose = false;
+    for (const auto& a : args)
+        if (a == "--verbose" || a == "-v") verbose = true;
+
     if (!client.has_token())
         throw std::runtime_error("not logged in (no token file found)");
 
@@ -111,7 +116,16 @@ void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/)
     int64_t now = static_cast<int64_t>(std::time(nullptr));
     bool expired = (now >= tok.expires_at);
 
+    // Format token_uuid as "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    const uint8_t* u = tok.token_uuid;
+    char uuid_str[37];
+    std::snprintf(uuid_str, sizeof(uuid_str),
+        "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        u[0],u[1],u[2],u[3], u[4],u[5], u[6],u[7],
+        u[8],u[9], u[10],u[11],u[12],u[13],u[14],u[15]);
+
     std::cout << username << "\n";
+    std::cout << "token-id: " << uuid_str << "\n";
 
     // Format expiry as a human-readable local time
     std::time_t exp_t = static_cast<std::time_t>(tok.expires_at);
@@ -126,6 +140,35 @@ void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/)
         for (const auto& a : assertions)
             std::cout << "   " << a;
         std::cout << "\n";
+    }
+
+    if (verbose) {
+        std::cout << "\ntoken (" << wire.size() << " bytes):\n";
+        const size_t row = 16;
+        for (size_t off = 0; off < wire.size(); off += row) {
+            // Offset
+            char obuf[8];
+            std::snprintf(obuf, sizeof(obuf), "%06zx", off);
+            std::cout << obuf << "  ";
+            // Hex
+            for (size_t i = 0; i < row; ++i) {
+                if (off + i < wire.size()) {
+                    char hbuf[3];
+                    std::snprintf(hbuf, sizeof(hbuf), "%02x", wire[off + i]);
+                    std::cout << hbuf;
+                } else {
+                    std::cout << "  ";
+                }
+                std::cout << (i == 7 ? "  " : " ");
+            }
+            std::cout << " |";
+            // ASCII
+            for (size_t i = 0; i < row && off + i < wire.size(); ++i) {
+                uint8_t c = wire[off + i];
+                std::cout << (char)(c >= 0x20 && c < 0x7f ? c : '.');
+            }
+            std::cout << "|\n";
+        }
     }
 }
 

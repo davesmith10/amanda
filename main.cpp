@@ -19,7 +19,7 @@ static void usage() {
         "Commands:\n"
         "  login        [--username <name>] [--token <base64>]\n"
         "  logout\n"
-        "  whoami\n"
+        "  whoami       [--verbose|-v]\n"
         "  listuser\n"
         "  changepass   [--username <name>]\n"
         "  keygen       --alias <name> [--tray <level>] [--pg crystals]\n"
@@ -33,6 +33,7 @@ static void usage() {
         "  secrets      [--prefix <prefix>]\n"
         "  link         --target <path> --link <path>\n"
         "  health\n"
+        "  yaml-extract <path> <ypath>\n"
         "\n"
         "Admin commands:\n"
         "  newuser      --username <name> [--assert <scope> ...]\n"
@@ -95,7 +96,8 @@ int main(int argc, char** argv) {
         else if (command == "meta")         amanda::cmd_meta(client, cfg, cmd_args);
         else if (command == "secrets")      amanda::cmd_secrets(client, cfg, cmd_args);
         else if (command == "link")         amanda::cmd_link(client, cfg, cmd_args);
-        else if (command == "health")       amanda::cmd_health(client, cfg, cmd_args);
+        else if (command == "health")        amanda::cmd_health(client, cfg, cmd_args);
+        else if (command == "yaml-extract") amanda::cmd_yaml_extract(client, cfg, cmd_args);
         else {
             std::cerr << "amanda: unknown command '" << command << "'\n";
             usage();

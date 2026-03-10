@@ -4,6 +4,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -217,6 +218,38 @@ void cmd_link(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
 void cmd_health(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
     auto resp = client.get("/health");
     std::cout << resp.value("status", "unknown") << "\n";
+}
+
+// ---------------------------------------------------------------------------
+// yaml-extract
+// ---------------------------------------------------------------------------
+// Usage: amanda yaml-extract <vpath> <ypath-expression>
+// ---------------------------------------------------------------------------
+void cmd_yaml_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    if (args.size() < 2)
+        throw std::invalid_argument("yaml-extract: usage: yaml-extract <vpath> <ypath>");
+
+    std::string vpath = args[0];
+    std::string ypath = args[1];
+
+    // Percent-encode the ypath for use as a query parameter value
+    std::string ypath_enc;
+    for (unsigned char c : ypath) {
+        if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            ypath_enc += static_cast<char>(c);
+        } else {
+            char buf[4];
+            std::snprintf(buf, sizeof(buf), "%%%02X", c);
+            ypath_enc += buf;
+        }
+    }
+
+    std::string endpoint = "/secrets" + vpath + "/yaml-extract?ypath=" + ypath_enc;
+    std::string ct;
+    auto data = client.get_binary(endpoint, ct);
+    std::cout.write(reinterpret_cast<const char*>(data.data()),
+                    static_cast<std::streamsize>(data.size()));
+    std::cout << "\n";
 }
 
 } // namespace amanda

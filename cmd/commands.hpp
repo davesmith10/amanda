@@ -30,7 +30,8 @@ void cmd_create     (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_read       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_meta       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_secrets    (HttpClient& client, AmandaConfig& cfg, const Args& args);
-void cmd_link       (HttpClient& client, AmandaConfig& cfg, const Args& args);
-void cmd_health     (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_link         (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_health       (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_yaml_extract (HttpClient& client, AmandaConfig& cfg, const Args& args);
 
 } // namespace amanda
