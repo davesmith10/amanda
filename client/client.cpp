@@ -62,7 +62,8 @@ static httplib::Headers make_headers(const std::string& token_b64) {
     return hdrs;
 }
 
-static void check_response(const httplib::Result& res, const std::string& path) {
+static void check_response(const httplib::Result& res, const std::string& path,
+                           HttpClient* client_for_401 = nullptr) {
     if (!res)
         throw std::runtime_error("HTTP request failed for " + path +
                                  ": " + httplib::to_string(res.error()));
@@ -73,6 +74,13 @@ static void check_response(const httplib::Result& res, const std::string& path) 
             if (j.contains("error"))
                 msg = j["error"].get<std::string>();
         } catch (...) {}
+        // On 401 with token-revocation messages, auto-delete the local token
+        if (res->status == 401 && client_for_401) {
+            if (msg == "invalid token, please login" ||
+                msg == "token revoked, please login") {
+                client_for_401->delete_token();
+            }
+        }
         throw std::runtime_error(msg);
     }
 }
@@ -142,7 +150,7 @@ nlohmann::json HttpClient::get(const std::string& path) {
     httplib::Result res;
     if (is_https_) res = https_->Get(path.c_str(), hdrs);
     else           res = http_->Get(path.c_str(), hdrs);
-    check_response(res, path);
+    check_response(res, path, this);
     return json::parse(res->body);
 }
 
@@ -151,7 +159,7 @@ nlohmann::json HttpClient::post_json(const std::string& path, const nlohmann::js
     httplib::Result res;
     if (is_https_) res = https_->Post(path.c_str(), hdrs, body.dump(), "application/json");
     else           res = http_->Post(path.c_str(), hdrs, body.dump(), "application/json");
-    check_response(res, path);
+    check_response(res, path, this);
     return json::parse(res->body);
 }
 
@@ -163,7 +171,7 @@ nlohmann::json HttpClient::post_binary(const std::string& path,
     httplib::Result res;
     if (is_https_) res = https_->Post(path.c_str(), hdrs, body, content_type.c_str());
     else           res = http_->Post(path.c_str(), hdrs, body, content_type.c_str());
-    check_response(res, path);
+    check_response(res, path, this);
     return json::parse(res->body);
 }
 
@@ -173,7 +181,7 @@ std::vector<uint8_t> HttpClient::get_binary(const std::string& path,
     httplib::Result res;
     if (is_https_) res = https_->Get(path.c_str(), hdrs);
     else           res = http_->Get(path.c_str(), hdrs);
-    check_response(res, path);
+    check_response(res, path, this);
     content_type_out = res->get_header_value("Content-Type");
     return {res->body.begin(), res->body.end()};
 }
@@ -183,7 +191,7 @@ nlohmann::json HttpClient::delete_(const std::string& path) {
     httplib::Result res;
     if (is_https_) res = https_->Delete(path.c_str(), hdrs);
     else           res = http_->Delete(path.c_str(), hdrs);
-    check_response(res, path);
+    check_response(res, path, this);
     return json::parse(res->body);
 }
 

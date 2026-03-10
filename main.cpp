@@ -38,7 +38,11 @@ static void usage() {
         "Admin commands:\n"
         "  newuser      --username <name> [--assert <scope> ...]\n"
         "  deluser      --username <name>\n"
-        "  flush-all\n";
+        "  flush-all\n"
+        "  list-tokens\n"
+        "  revoke-token <token_id>\n"
+        "  revoke-tokens <username>\n"
+        "  revoke-all\n";
 }
 
 int main(int argc, char** argv) {
@@ -97,7 +101,11 @@ int main(int argc, char** argv) {
         else if (command == "secrets")      amanda::cmd_secrets(client, cfg, cmd_args);
         else if (command == "link")         amanda::cmd_link(client, cfg, cmd_args);
         else if (command == "health")        amanda::cmd_health(client, cfg, cmd_args);
-        else if (command == "yaml-extract") amanda::cmd_yaml_extract(client, cfg, cmd_args);
+        else if (command == "yaml-extract")  amanda::cmd_yaml_extract(client, cfg, cmd_args);
+        else if (command == "list-tokens")   amanda::cmd_list_tokens(client, cfg, cmd_args);
+        else if (command == "revoke-token")  amanda::cmd_revoke_token(client, cfg, cmd_args);
+        else if (command == "revoke-tokens") amanda::cmd_revoke_tokens(client, cfg, cmd_args);
+        else if (command == "revoke-all")    amanda::cmd_revoke_all(client, cfg, cmd_args);
         else {
             std::cerr << "amanda: unknown command '" << command << "'\n";
             usage();

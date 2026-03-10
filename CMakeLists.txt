@@ -45,6 +45,7 @@ add_executable(amanda
     cmd/users.cpp
     cmd/trays.cpp
     cmd/secrets.cpp
+    cmd/tokens.cpp
 )
 target_link_libraries(amanda PRIVATE amanda_client)
 target_compile_options(amanda PRIVATE -Wall -Wextra)

@@ -12,8 +12,9 @@ communicates with the `sarek` server over HTTPS using Bearer-token authenticatio
 3. [TLS / Certificate Trust](#tls--certificate-trust)
 4. [Token Lifecycle](#token-lifecycle)
 5. [Command Reference](#command-reference)
-6. [Workflows](#workflows)
-7. [Access Control](#access-control)
+6. [Token Management (admin)](#token-management-admin-only)
+7. [Workflows](#workflows)
+8. [Access Control](#access-control)
 
 ---
 
@@ -158,16 +159,32 @@ Tokens are raw binary blobs signed with the server's `system-token` tray
 (ECDSA P-256 + Dilithium). Amanda stores them at `$HOME/.sarek` with `0600`
 permissions and reads them back on every command.
 
-- **Login** writes a token.
-- **Logout** sends `DELETE /logout` (server-side no-op; the server is
-  stateless) and deletes `$HOME/.sarek`.
+- **Login** writes a token. The server registers it in its `manage_token` database.
+- **Logout** sends `DELETE /logout` and deletes `$HOME/.sarek`.
 - If `$HOME/.sarek` is absent, commands that require authentication will fail
   with a 401 from the server.
 - Tokens have a 24-hour TTL. After expiry, log in again.
+- **Revocation**: An admin can revoke any token immediately via `revoke-token`,
+  `revoke-tokens`, or `revoke-all`. If you send a revoked or unrecognised token,
+  the server returns a 401 and amanda automatically deletes `$HOME/.sarek` —
+  the next command will tell you to log in again.
 
 ---
 
 ## Command Reference
+
+### Token Management Commands (admin only)
+
+| Command | Description |
+|---------|-------------|
+| `list-tokens` | List all active and revoked tokens with status |
+| `revoke-token <token_id>` | Revoke one specific token by its UUID |
+| `revoke-tokens <username>` | Revoke all active tokens for one user |
+| `revoke-all` | Revoke every active token (forces all users to re-login) |
+
+See [Token Management](#token-management-admin-only) below for full details.
+
+---
 
 ### `login`
 
@@ -503,6 +520,72 @@ before logging in.
 ```bash
 amanda --cacert ~/.sarek-cert.pem health
 # → healthy
+```
+
+---
+
+### Token Management *(admin only)*
+
+These commands require an admin token (assertion `/*`).
+
+#### `list-tokens`
+
+```
+amanda list-tokens
+```
+
+Lists all issued tokens with their status:
+
+```
+TOKEN_ID                              USERNAME          CREATED               EXPIRES               STATUS
+------------------------------------  ----------------  --------------------  --------------------  -------
+a1b2c3d4-e5f6-4abc-8def-1234567890ab  alice             2026-03-11 10:00:00Z  2026-03-12 10:00:00Z  active
+f0e1d2c3-b4a5-4678-9012-abcdef012345  bob               2026-03-10 08:30:00Z  2026-03-11 08:30:00Z  REVOKED
+```
+
+#### `revoke-token`
+
+```
+amanda revoke-token <token_id>
+```
+
+Revoke a single token by its UUID. The token is immediately invalidated;
+the next request using it will receive a 401 and the client will auto-delete
+its local token file.
+
+```bash
+amanda revoke-token a1b2c3d4-e5f6-4abc-8def-1234567890ab
+# Revoked token: a1b2c3d4-e5f6-4abc-8def-1234567890ab
+```
+
+#### `revoke-tokens`
+
+```
+amanda revoke-tokens <username>
+```
+
+Revoke all active tokens belonging to the given user. Useful when a user's
+device is lost or account is compromised.
+
+```bash
+amanda revoke-tokens alice
+# Revoked 2 token(s) for user 'alice'
+```
+
+#### `revoke-all`
+
+```
+amanda revoke-all
+```
+
+Revoke every active token in the system. All users must re-login.
+Prompts for confirmation before proceeding.
+
+```bash
+amanda revoke-all
+# This will revoke ALL active tokens and force all users to re-login.
+# Type 'yes' to confirm: yes
+# Revoked 7 token(s). All users must re-login.
 ```
 
 ---

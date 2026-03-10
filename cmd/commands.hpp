@@ -34,4 +34,10 @@ void cmd_link         (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_health       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_yaml_extract (HttpClient& client, AmandaConfig& cfg, const Args& args);
 
+// Token management (admin)
+void cmd_list_tokens  (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_revoke_token (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_revoke_tokens(HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_revoke_all   (HttpClient& client, AmandaConfig& cfg, const Args& args);
+
 } // namespace amanda
