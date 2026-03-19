@@ -9,7 +9,7 @@ find_package(OpenSSL REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # libcrystals + transitive deps (for base64_encode/base64_decode)
-find_library(CRYSTALS_LIB crystals PATHS /usr/local/lib REQUIRED)
+find_library(CRYSTALS_LIB crystals-1.0 PATHS /usr/local/lib REQUIRED)
 find_library(XKCP_LIB     XKCP     PATHS /usr/local/lib REQUIRED)
 find_library(BLAKE3_LIB   blake3
     PATHS /mnt/c/Users/daves/OneDrive/Desktop/Crystals/local/lib64 REQUIRED)
@@ -17,6 +17,7 @@ find_library(TBB_LIB      tbb
     PATHS /usr/lib64 /mnt/c/Users/daves/OneDrive/Desktop/Crystals/local/lib64 REQUIRED)
 
 set(CRYSTALS_INC /usr/local/include)
+set(XKCP_INC /mnt/c/Users/daves/OneDrive/Desktop/Crystals/XKCP/bin/x86-64/libXKCP.so.headers)
 
 # ── amanda_client (config + HTTP client) ──────────────────────────────────────
 add_library(amanda_client STATIC
@@ -26,6 +27,7 @@ add_library(amanda_client STATIC
 target_include_directories(amanda_client PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CRYSTALS_INC}
+    ${XKCP_INC}
 )
 target_link_libraries(amanda_client PUBLIC
     OpenSSL::SSL

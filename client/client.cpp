@@ -1,7 +1,7 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "client/client.hpp"
 
-#include <crystals/base64.hpp>
+#include <crystals/crystals.hpp>
 
 #include <sys/stat.h>
 #include <unistd.h>

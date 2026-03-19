@@ -1,8 +1,7 @@
 #include "cmd/commands.hpp"
 #include "client/client.hpp"
 
-#include <crystals/base64.hpp>
-#include <crystals/token_format.hpp>
+#include <crystals/crystals.hpp>
 
 #include <unistd.h>   // getpass
 
