@@ -7,6 +7,7 @@
 #include <unistd.h>   // getpass
 
 #include <ctime>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -16,21 +17,37 @@
 namespace amanda {
 
 // ---------------------------------------------------------------------------
+// Helper: read a password from a file (strips trailing newline / \r\n).
+// ---------------------------------------------------------------------------
+static std::string read_password_file(const std::string& path) {
+    std::ifstream f(path);
+    if (!f) throw std::runtime_error("cannot open --password-file: " + path);
+    std::string pw;
+    std::getline(f, pw);
+    if (!pw.empty() && pw.back() == '\r') pw.pop_back();
+    if (pw.empty()) throw std::runtime_error("--password-file is empty");
+    return pw;
+}
+
+// ---------------------------------------------------------------------------
 // login
 // ---------------------------------------------------------------------------
 // Usage:
-//   amanda login [--username <name>]
-//   amanda login --token <base64>   (first-login after invite)
+//   amanda login [--username <name>] [--password-file <path>]
+//   amanda login --token <base64> [--password-file <path>]   (invite flow)
 // ---------------------------------------------------------------------------
 void cmd_login(HttpClient& client, AmandaConfig& cfg, const Args& args) {
     std::string username;
     std::string token_arg;
+    std::string password_file;
 
     for (size_t i = 0; i < args.size(); ++i) {
         if (args[i] == "--username" && i + 1 < args.size()) {
             username = args[++i];
         } else if (args[i] == "--token" && i + 1 < args.size()) {
             token_arg = args[++i];
+        } else if (args[i] == "--password-file" && i + 1 < args.size()) {
+            password_file = args[++i];
         }
     }
 
@@ -39,10 +56,15 @@ void cmd_login(HttpClient& client, AmandaConfig& cfg, const Args& args) {
         auto wire = base64_decode(token_arg);
         client.save_token(wire);
 
-        const char* pw1 = getpass("Set password: ");
-        std::string p1(pw1);
-        const char* pw2 = getpass("Confirm password: ");
-        if (p1 != std::string(pw2))
+        std::string p1, p2;
+        if (!password_file.empty()) {
+            p1 = read_password_file(password_file);
+            p2 = p1;
+        } else {
+            p1 = getpass("Set password: ");
+            p2 = getpass("Confirm password: ");
+        }
+        if (p1 != p2)
             throw std::runtime_error("Passwords do not match");
 
         client.post_json("/users/password", {{"password", p1}});
@@ -56,8 +78,9 @@ void cmd_login(HttpClient& client, AmandaConfig& cfg, const Args& args) {
         std::cout << "Username: " << std::flush;
         std::getline(std::cin, username);
     }
-    const char* pw = getpass("Password: ");
-    std::string password(pw);
+    std::string password = password_file.empty()
+        ? std::string(getpass("Password: "))
+        : read_password_file(password_file);
 
     auto resp = client.post_json("/login",
         {{"username", username}, {"password", password}});

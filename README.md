@@ -15,6 +15,7 @@ communicates with the `sarek` server over HTTPS using Bearer-token authenticatio
 6. [Token Management (admin)](#token-management-admin-only)
 7. [Workflows](#workflows)
 8. [Access Control](#access-control)
+9. [Secret Wrapping](#secret-wrapping)
 
 ---
 
@@ -183,6 +184,14 @@ permissions and reads them back on every command.
 | `revoke-all` | Revoke every active token (forces all users to re-login) |
 
 See [Token Management](#token-management-admin-only) below for full details.
+
+### Secret Wrapping
+
+| Command | Description |
+|---------|-------------|
+| `wrap [--ttl <time>]` | Wrap stdin → opaque one-time delivery token |
+
+See [Secret Wrapping](#secret-wrapping) below for full details.
 
 ---
 
@@ -524,6 +533,46 @@ amanda --cacert ~/.sarek-cert.pem health
 
 ---
 
+### `wrap`
+
+```
+amanda wrap [--ttl <number>[s|m|h|d]]
+```
+
+Encrypt data read from stdin and store it as a one-time wrapped secret on the server. Prints the opaque base64url token to stdout. The recipient redeems the token via an unauthenticated HTTP GET — no amanda installation required.
+
+| Option | Default | Notes |
+|--------|---------|-------|
+| `--ttl` | `3600` (1 hour) | TTL for the wrapped secret |
+
+**TTL format**: a number followed by `s` (seconds), `m` (minutes), `h` (hours), or `d` (days). A bare integer is interpreted as seconds. Range: 600 s (10 min) – 432 000 s (5 days).
+
+**Prerequisites**: a `wrap` tray must exist on the server (create once with `amanda keygen --alias wrap`).
+
+```bash
+# Wrap a password (default 1-hour TTL)
+echo "hunter2" | amanda wrap
+# → ABCDEFGHIJKLMNOPQRSTUV
+
+# Wrap a file with a 24-hour TTL
+cat secret.key | amanda wrap --ttl 24h
+# → XYZ123...
+
+# Wrap with explicit seconds
+echo "s3cr3t" | amanda wrap --ttl 7200
+```
+
+The recipient redeems the token — no auth required:
+
+```bash
+curl https://sarek.host:8443/wrapped/ABCDEFGHIJKLMNOPQRSTUV
+# → hunter2
+```
+
+A second attempt returns `404`. Expired tokens are purged automatically by the server's hourly cleanup thread.
+
+---
+
 ### Token Management *(admin only)*
 
 These commands require an admin token (assertion `/*`).
@@ -656,6 +705,20 @@ chmod 600 my-vault-key-backup.json
 # Store offline / in a safe location
 ```
 
+### Sending a one-time secret (wrap)
+
+```bash
+# One-time setup: create the wrap tray (admin only)
+amanda keygen --alias wrap --tray level3
+
+# Wrap a secret with a 2-hour window
+echo "TempPass#2026!" | amanda wrap --ttl 2h
+# → ABCDEF123456789_abcdef-XY
+
+# Give the recipient this URL (no auth required to redeem):
+# https://sarek.local:8443/wrapped/ABCDEF123456789_abcdef-XY
+```
+
 ### Creating a shared link
 
 ```bash
@@ -687,6 +750,78 @@ token. They cannot be changed without re-issuing the token.
 
 A token covers both `read` and `create` for any path within its scope. There
 is currently no read-only or write-only scope distinction.
+
+### Sending a one-time secret to a new user
+
+```bash
+# Before first use: create the wrap tray (admin, once per server)
+amanda keygen --alias wrap --tray level3
+
+# Alice wraps a temporary database password for Bob (24-hour window)
+echo "TempPass#2026!" | amanda wrap --ttl 24h
+# → ABCDEF123456789_abcdef-XY
+
+# Alice sends Bob this URL out-of-band (email, Slack, etc.):
+# https://sarek.local:8443/wrapped/ABCDEF123456789_abcdef-XY
+
+# Bob redeems it once — no account required
+curl --cacert ~/.sarek-cert.pem \
+     "https://sarek.local:8443/wrapped/ABCDEF123456789_abcdef-XY"
+# → TempPass#2026!
+
+# Any further attempt returns 404
+```
+
+---
+
+## Secret Wrapping
+
+Secret wrapping is a one-time, unauthenticated secret delivery mechanism. The sender (authenticated) encrypts a value and receives an opaque token. The recipient redeems the URL once — the record is deleted on first access.
+
+### Setup (one time per server, admin)
+
+```bash
+amanda keygen --alias wrap --tray level3
+```
+
+The `wrap` tray is the server-side encryption key for all wrapped secrets. It must exist before any `wrap` command is used.
+
+### Wrapping
+
+```bash
+# From stdin (default 1-hour TTL)
+echo "s3cr3t" | amanda wrap
+
+# From a file, 2-day TTL
+cat private.key | amanda wrap --ttl 2d
+
+# 30-minute TTL (in seconds)
+echo "ephemeral" | amanda wrap --ttl 1800
+```
+
+Each `wrap` call prints a 22-character base64url token. Share the full redemption URL with the recipient:
+
+```
+https://<server>:<port>/wrapped/<token>
+```
+
+### Redeeming (recipient, no auth)
+
+```bash
+curl https://sarek.host:8443/wrapped/<token>
+```
+
+The response body is the raw plaintext. After one successful redemption, the token is deleted and returns `404` forever.
+
+### Expiry
+
+Tokens with a TTL that has elapsed also return `404`. Expired records are purged hourly by the server's background cleanup thread.
+
+### Security notes
+
+- The token is opaque (16 random bytes, base64url-encoded). It is not a bearer token and carries no user identity.
+- The secret is encrypted server-side using the `wrap` tray (hybrid KEM, OBIWAN format) before being stored in BDB.
+- Keep the redemption URL confidential until the recipient is ready — it is the only credential needed to read the secret.
 
 ---
 

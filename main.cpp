@@ -34,6 +34,7 @@ static void usage() {
         "  link         --target <path> --link <path>\n"
         "  health\n"
         "  yaml-extract <path> <ypath>\n"
+        "  wrap         [--ttl <number>[s|m|h|d]]   (reads from stdin)\n"
         "\n"
         "Admin commands:\n"
         "  newuser      --username <name> [--assert <scope> ...]\n"
@@ -106,6 +107,7 @@ int main(int argc, char** argv) {
         else if (command == "revoke-token")  amanda::cmd_revoke_token(client, cfg, cmd_args);
         else if (command == "revoke-tokens") amanda::cmd_revoke_tokens(client, cfg, cmd_args);
         else if (command == "revoke-all")    amanda::cmd_revoke_all(client, cfg, cmd_args);
+        else if (command == "wrap")          amanda::cmd_wrap(client, cfg, cmd_args);
         else {
             std::cerr << "amanda: unknown command '" << command << "'\n";
             usage();

@@ -4,6 +4,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cctype>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -250,6 +251,55 @@ void cmd_yaml_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& arg
     std::cout.write(reinterpret_cast<const char*>(data.data()),
                     static_cast<std::streamsize>(data.size()));
     std::cout << "\n";
+}
+
+// ---------------------------------------------------------------------------
+// wrap
+// ---------------------------------------------------------------------------
+// Usage: amanda wrap [--ttl <number>[s|m|h|d]]
+// Reads plaintext from stdin; prints the wrapping token to stdout.
+// ---------------------------------------------------------------------------
+
+static int64_t parse_ttl_str(const std::string& s) {
+    if (s.empty()) return 0;
+    char unit = s.back();
+    int64_t n = 0;
+    if (std::isdigit(static_cast<unsigned char>(unit))) {
+        n = std::stoll(s);
+        return n;
+    }
+    n = std::stoll(std::string(s.begin(), s.end() - 1));
+    switch (std::tolower(static_cast<unsigned char>(unit))) {
+        case 's': return n;
+        case 'm': return n * 60;
+        case 'h': return n * 3600;
+        case 'd': return n * 86400;
+        default:  throw std::invalid_argument("wrap: unknown TTL unit '" + std::string(1, unit) + "'");
+    }
+}
+
+void cmd_wrap(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    std::string ttl_str = "3600";
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == "--ttl" && i + 1 < args.size())
+            ttl_str = args[++i];
+    }
+
+    int64_t ttl_secs = parse_ttl_str(ttl_str);
+    if (ttl_secs < 600 || ttl_secs > 432000)
+        throw std::invalid_argument("wrap: ttl must be 600-432000 seconds (10m-5d)");
+
+    std::vector<uint8_t> plaintext(
+        std::istreambuf_iterator<char>(std::cin),
+        std::istreambuf_iterator<char>());
+    if (plaintext.empty())
+        throw std::invalid_argument("wrap: no data on stdin");
+
+    std::string endpoint = "/wrap?ttl=" + std::to_string(ttl_secs);
+    auto body = client.post_binary(endpoint, plaintext, "application/octet-stream");
+    std::string token = body.at("token").get<std::string>();
+    std::cout << token << "\n";
 }
 
 } // namespace amanda

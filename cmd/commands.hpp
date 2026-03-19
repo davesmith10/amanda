@@ -40,4 +40,7 @@ void cmd_revoke_token (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_revoke_tokens(HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_revoke_all   (HttpClient& client, AmandaConfig& cfg, const Args& args);
 
+// Wrap — one-time secret delivery
+void cmd_wrap(HttpClient& client, AmandaConfig& cfg, const Args& args);
+
 } // namespace amanda
