@@ -9,7 +9,7 @@ find_package(OpenSSL REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # libcrystals + transitive deps (for base64_encode/base64_decode)
-find_library(CRYSTALS_LIB crystals-1.0 PATHS /usr/local/lib REQUIRED)
+find_library(CRYSTALS_LIB crystals-1.1 PATHS /usr/local/lib REQUIRED)
 find_library(XKCP_LIB     XKCP     PATHS /usr/local/lib REQUIRED)
 find_library(BLAKE3_LIB   blake3
     PATHS /mnt/c/Users/daves/OneDrive/Desktop/Crystals/local/lib64 REQUIRED)
