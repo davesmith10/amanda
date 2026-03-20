@@ -61,7 +61,7 @@ void cmd_create(HttpClient& client, AmandaConfig& cfg, const Args& args) {
     std::string from_file;
     std::string from_text;
     std::string mimetype;
-    std::string tray_alias = cfg.default_tray.empty() ? "system-token" : cfg.default_tray;
+    std::string tray_alias = cfg.default_tray.empty() ? "system" : cfg.default_tray;
 
     // First non-flag arg is the path
     bool path_set = false;
@@ -142,6 +142,7 @@ void cmd_read(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     } else {
         std::cout.write(reinterpret_cast<const char*>(data.data()),
                         static_cast<std::streamsize>(data.size()));
+        std::cout.flush();
     }
 }
 
