@@ -255,6 +255,38 @@ void cmd_yaml_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& arg
 }
 
 // ---------------------------------------------------------------------------
+// json-extract
+// ---------------------------------------------------------------------------
+// Usage: amanda json-extract <vpath> <json-pointer>
+// ---------------------------------------------------------------------------
+void cmd_json_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    if (args.size() < 2)
+        throw std::invalid_argument("json-extract: usage: json-extract <vpath> <json-pointer>");
+
+    std::string vpath = args[0];
+    std::string jptr  = args[1];
+
+    // Percent-encode the JSON Pointer for use as a query parameter value
+    std::string jptr_enc;
+    for (unsigned char c : jptr) {
+        if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            jptr_enc += static_cast<char>(c);
+        } else {
+            char buf[4];
+            std::snprintf(buf, sizeof(buf), "%%%02X", c);
+            jptr_enc += buf;
+        }
+    }
+
+    std::string endpoint = "/secrets" + vpath + "/json-extract?jptr=" + jptr_enc;
+    std::string ct;
+    auto data = client.get_binary(endpoint, ct);
+    std::cout.write(reinterpret_cast<const char*>(data.data()),
+                    static_cast<std::streamsize>(data.size()));
+    std::cout << "\n";
+}
+
+// ---------------------------------------------------------------------------
 // wrap
 // ---------------------------------------------------------------------------
 // Usage: amanda wrap [--ttl <number>[s|m|h|d]]

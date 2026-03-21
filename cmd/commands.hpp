@@ -33,6 +33,7 @@ void cmd_secrets    (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_link         (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_health       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_yaml_extract (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_json_extract (HttpClient& client, AmandaConfig& cfg, const Args& args);
 
 // Token management (admin)
 void cmd_list_tokens  (HttpClient& client, AmandaConfig& cfg, const Args& args);

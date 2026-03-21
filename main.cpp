@@ -34,6 +34,7 @@ static void usage() {
         "  link         --target <path> --link <path>\n"
         "  health\n"
         "  yaml-extract <path> <ypath>\n"
+        "  json-extract <path> <json-pointer>\n"
         "  wrap         [--ttl <number>[s|m|h|d]]   (reads from stdin)\n"
         "\n"
         "Admin commands:\n"
@@ -103,6 +104,7 @@ int main(int argc, char** argv) {
         else if (command == "link")         amanda::cmd_link(client, cfg, cmd_args);
         else if (command == "health")        amanda::cmd_health(client, cfg, cmd_args);
         else if (command == "yaml-extract")  amanda::cmd_yaml_extract(client, cfg, cmd_args);
+        else if (command == "json-extract")  amanda::cmd_json_extract(client, cfg, cmd_args);
         else if (command == "list-tokens")   amanda::cmd_list_tokens(client, cfg, cmd_args);
         else if (command == "revoke-token")  amanda::cmd_revoke_token(client, cfg, cmd_args);
         else if (command == "revoke-tokens") amanda::cmd_revoke_tokens(client, cfg, cmd_args);
