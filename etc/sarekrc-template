@@ -1,0 +1,9 @@
+# .sarekrc - amanda client config
+
+# these config values make it unnecessary to set command-line flags for common items
+
+server: https://localhost:8443
+username: <your username>` 
+
+# mutually exclusive to --insecure
+cacert: cert.pem
