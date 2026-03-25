@@ -161,9 +161,9 @@ void cmd_meta(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
 
     auto m = client.get("/secrets" + path + "/meta");
     std::cout << "path:      " << path                       << "\n";
-    std::cout << "object_id: " << m.value("object_id",  0)   << "\n";
-    std::cout << "created:   " << m.value("created",    0)   << "\n";
-    std::cout << "size:      " << m.value("size",        0)   << "\n";
+    std::cout << "object_id: " << m.value("object_id",  uint64_t{0}) << "\n";
+    std::cout << "created:   " << m.value("created",    uint64_t{0}) << "\n";
+    std::cout << "size:      " << m.value("size",        uint64_t{0}) << "\n";
     std::cout << "mimetype:  " << m.value("mimetype",   "") << "\n";
     std::cout << "tray_id:   " << m.value("tray_id",    "") << "\n";
     if (m.contains("link_path"))
