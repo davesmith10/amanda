@@ -18,6 +18,7 @@ static void usage() {
         "\n"
         "Commands:\n"
         "  login        [--username <name>] [--token <base64>]\n"
+        "  login:status Check local token validity and expiry (no server contact)\n"
         "  logout\n"
         "  whoami       [--verbose|-v]\n"
         "  listuser\n"
@@ -27,11 +28,12 @@ static void usage() {
         "  tray         --alias <name> [--public]\n"
         "  export-tray  --alias <name> [--to-file <path>]\n"
         "  mark-default --alias <name>\n"
-        "  create       <path> [--from-file <f>|--from-text <t>] [--mimetype <m>] [--tray <a>]\n"
-        "  read         <path> [--to-file <path>]\n"
+        "  put          <path> [--from-file <f>|--from-text <t>] [--mimetype <m>] [--tray <a>]\n"
+        "  get          <path> [--to-file <path>]\n"
         "  meta         <path>\n"
-        "  secrets      [--prefix <prefix>]\n"
-        "  link         --target <path> --link <path>\n"
+        "  list         [--prefix <prefix>]\n"
+        "  link         <target-path> <v-path>\n"
+        "  unlink       <v-path>\n"
         "  health\n"
         "  yaml-extract <path> <ypath>\n"
         "  json-extract <path> <json-pointer>\n"
@@ -87,8 +89,9 @@ int main(int argc, char** argv) {
 
         amanda::HttpClient client(cfg, insecure, cfg.cacert);
 
-        if      (command == "login")        amanda::cmd_login(client, cfg, cmd_args);
-        else if (command == "logout")       amanda::cmd_logout(client, cfg, cmd_args);
+        if      (command == "login")         amanda::cmd_login(client, cfg, cmd_args);
+        else if (command == "login:status")  amanda::cmd_login_status(client, cfg, cmd_args);
+        else if (command == "logout")        amanda::cmd_logout(client, cfg, cmd_args);
         else if (command == "whoami")       amanda::cmd_whoami(client, cfg, cmd_args);
         else if (command == "newuser")      amanda::cmd_newuser(client, cfg, cmd_args);
         else if (command == "listuser")     amanda::cmd_listuser(client, cfg, cmd_args);
@@ -100,11 +103,12 @@ int main(int argc, char** argv) {
         else if (command == "tray")         amanda::cmd_tray(client, cfg, cmd_args);
         else if (command == "export-tray")  amanda::cmd_export_tray(client, cfg, cmd_args);
         else if (command == "mark-default") amanda::cmd_mark_default(client, cfg, cmd_args);
-        else if (command == "create")       amanda::cmd_create(client, cfg, cmd_args);
-        else if (command == "read")         amanda::cmd_read(client, cfg, cmd_args);
+        else if (command == "put")          amanda::cmd_create(client, cfg, cmd_args);
+        else if (command == "get")          amanda::cmd_read(client, cfg, cmd_args);
         else if (command == "meta")         amanda::cmd_meta(client, cfg, cmd_args);
-        else if (command == "secrets")      amanda::cmd_secrets(client, cfg, cmd_args);
+        else if (command == "list")         amanda::cmd_secrets(client, cfg, cmd_args);
         else if (command == "link")         amanda::cmd_link(client, cfg, cmd_args);
+        else if (command == "unlink")       amanda::cmd_unlink(client, cfg, cmd_args);
         else if (command == "health")        amanda::cmd_health(client, cfg, cmd_args);
         else if (command == "yaml-extract")  amanda::cmd_yaml_extract(client, cfg, cmd_args);
         else if (command == "json-extract")  amanda::cmd_json_extract(client, cfg, cmd_args);

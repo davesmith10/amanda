@@ -13,9 +13,10 @@ class HttpClient;
 // the remaining command-line arguments after the command name.
 using Args = std::vector<std::string>;
 
-void cmd_login      (HttpClient& client, AmandaConfig& cfg, const Args& args);
-void cmd_logout     (HttpClient& client, AmandaConfig& cfg, const Args& args);
-void cmd_whoami     (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_login        (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_logout       (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_login_status (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_whoami       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_newuser    (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_listuser   (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_changepass (HttpClient& client, AmandaConfig& cfg, const Args& args);
@@ -31,6 +32,7 @@ void cmd_read       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_meta       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_secrets    (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_link         (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_unlink       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_health       (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_yaml_extract (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_json_extract (HttpClient& client, AmandaConfig& cfg, const Args& args);

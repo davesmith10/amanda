@@ -193,25 +193,40 @@ void cmd_secrets(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
 // ---------------------------------------------------------------------------
 // link
 // ---------------------------------------------------------------------------
-// Usage: amanda link --target <path> --link <path>
+// Usage: amanda link <target-path> <v-path>
 // ---------------------------------------------------------------------------
 void cmd_link(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
-    std::string target;
-    std::string link;
+    if (args.size() < 2)
+        throw std::invalid_argument("usage: link <target-path> <v-path>");
 
-    for (size_t i = 0; i < args.size(); ++i) {
-        if (args[i] == "--target" && i + 1 < args.size()) {
-            target = args[++i];
-        } else if (args[i] == "--link" && i + 1 < args.size()) {
-            link = args[++i];
-        }
-    }
+    const std::string& target = args[0];
+    const std::string& link   = args[1];
 
-    if (target.empty()) throw std::invalid_argument("link: --target is required");
-    if (link.empty())   throw std::invalid_argument("link: --link is required");
+    if (target.empty() || target[0] != '/')
+        throw std::invalid_argument("link: target-path must start with '/'");
+    if (link.empty() || link[0] != '/')
+        throw std::invalid_argument("link: v-path must start with '/'");
 
     client.post_json("/links", {{"target", target}, {"link", link}});
     std::cout << "Link " << link << " -> " << target << " created\n";
+}
+
+// ---------------------------------------------------------------------------
+// unlink
+// ---------------------------------------------------------------------------
+// Usage: amanda unlink <v-path>
+// ---------------------------------------------------------------------------
+void cmd_unlink(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    if (args.empty())
+        throw std::invalid_argument("usage: unlink <v-path>");
+
+    const std::string& path = args[0];
+
+    if (path.empty() || path[0] != '/')
+        throw std::invalid_argument("unlink: path must start with '/'");
+
+    client.delete_("/links" + path);
+    std::cout << "Unlinked " << path << "\n";
 }
 
 // ---------------------------------------------------------------------------

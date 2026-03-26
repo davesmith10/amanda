@@ -194,4 +194,68 @@ void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// login:status
+// ---------------------------------------------------------------------------
+// Reads the local token and prints its validity without contacting the server.
+// ---------------------------------------------------------------------------
+void cmd_login_status(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
+    if (!client.has_token()) {
+        std::cout << "not logged in\n";
+        return;
+    }
+
+    auto wire = base64_decode(client.token_b64());
+    Token tok = token_unpack(wire);
+
+    int64_t now     = static_cast<int64_t>(std::time(nullptr));
+    int64_t secs_left = tok.expires_at - now;
+
+    if (secs_left <= 0) {
+        std::cout << "expired, please login.\n";
+        return;
+    }
+
+    // Extract username and assertions
+    std::string data_str(tok.data.begin(), tok.data.end());
+    std::string username;
+    std::vector<std::string> assertions;
+    {
+        std::istringstream ss(data_str);
+        std::string line;
+        while (std::getline(ss, line)) {
+            if (line.empty()) continue;
+            if (line.substr(0, 4) == "usr:")
+                username = line.substr(4);
+            else
+                assertions.push_back(line);
+        }
+    }
+
+    // Format expiry timestamp
+    std::time_t exp_t = static_cast<std::time_t>(tok.expires_at);
+    char time_buf[64];
+    std::strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", std::localtime(&exp_t));
+
+    // Format time remaining as Xd Xh Xm Xs
+    int64_t d = secs_left / 86400;
+    int64_t h = (secs_left % 86400) / 3600;
+    int64_t m = (secs_left % 3600)  / 60;
+    int64_t s = secs_left % 60;
+    std::ostringstream ttl;
+    if (d) ttl << d << "d ";
+    if (d || h) ttl << h << "h ";
+    if (d || h || m) ttl << m << "m ";
+    ttl << s << "s";
+
+    std::cout << "logged in as : " << username << "\n";
+    std::cout << "expires      : " << time_buf << "  (in " << ttl.str() << ")\n";
+    if (!assertions.empty()) {
+        std::cout << "scope        :";
+        for (const auto& a : assertions)
+            std::cout << "  " << a;
+        std::cout << "\n";
+    }
+}
+
 } // namespace amanda
