@@ -302,6 +302,56 @@ void cmd_json_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& arg
 }
 
 // ---------------------------------------------------------------------------
+// regex-extract
+// ---------------------------------------------------------------------------
+// Usage: amanda regex-extract <vpath> <pattern> [--mode ecmascript|basic|extended]
+// ---------------------------------------------------------------------------
+void cmd_regex_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    if (args.size() < 2)
+        throw std::invalid_argument(
+            "regex-extract: usage: regex-extract <vpath> <pattern> [--mode ecmascript|basic|extended]");
+
+    std::string vpath   = args[0];
+    std::string pattern = args[1];
+    std::string mode;
+
+    // Parse optional --mode flag
+    for (std::size_t i = 2; i < args.size(); ++i) {
+        if (args[i] == "--mode" && i + 1 < args.size()) {
+            mode = args[++i];
+        } else if (args[i].rfind("--", 0) == 0) {
+            throw std::invalid_argument(
+                "regex-extract: unknown flag '" + args[i] + "'");
+        }
+    }
+
+    // Percent-encode for use as a query parameter value
+    auto pct_encode = [](const std::string& s) {
+        std::string out;
+        for (unsigned char c : s) {
+            if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+                out += static_cast<char>(c);
+            } else {
+                char buf[4];
+                std::snprintf(buf, sizeof(buf), "%%%02X", c);
+                out += buf;
+            }
+        }
+        return out;
+    };
+
+    std::string endpoint = "/secrets" + vpath + "/regex-extract?pattern=" + pct_encode(pattern);
+    if (!mode.empty())
+        endpoint += "&mode=" + pct_encode(mode);
+
+    std::string ct;
+    auto data = client.get_binary(endpoint, ct);
+    std::cout.write(reinterpret_cast<const char*>(data.data()),
+                    static_cast<std::streamsize>(data.size()));
+    std::cout << "\n";
+}
+
+// ---------------------------------------------------------------------------
 // wrap
 // ---------------------------------------------------------------------------
 // Usage: amanda wrap [--ttl <number>[s|m|h|d]]
