@@ -15,6 +15,32 @@ using json = nlohmann::json;
 namespace amanda {
 
 // ---------------------------------------------------------------------------
+// Helper: compact summary after keygen (no raw key material)
+// ---------------------------------------------------------------------------
+static void print_summary(const json& t) {
+    std::cout << "Tray generated:\n"
+              << "  alias:   " << t.value("alias",   "") << "\n"
+              << "  profile: " << t.value("type",    "") << "\n"
+              << "  id:      " << t.value("id",      "") << "\n"
+              << "  created: " << t.value("created", std::string{}) << "\n"
+              << "  expires: " << t.value("expires", std::string{}) << "\n";
+    if (t.contains("slots")) {
+        const auto& slots = t.at("slots");
+        std::cout << "  slots:   " << slots.size() << "\n";
+        for (const auto& s : slots) {
+            std::string pk64 = s.value("pk_b64", "");
+            // Compute byte size from base64 length, accounting for padding.
+            size_t pk_bytes = (pk64.size() * 3) / 4;
+            if (pk64.size() >= 1 && pk64.back() == '=') --pk_bytes;
+            if (pk64.size() >= 2 && pk64[pk64.size() - 2] == '=') --pk_bytes;
+            std::cout << "    - " << s.value("alg", "")
+                      << "  pk=" << pk_bytes << "B"
+                      << "  sk=" << (s.value("has_sk", false) ? "stored" : "none") << "\n";
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Helper: pretty-print a tray JSON object
 // ---------------------------------------------------------------------------
 static void print_tray(const json& t, bool public_only = false) {
@@ -64,8 +90,7 @@ void cmd_keygen(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
         throw std::invalid_argument("keygen: --pg must be 'crystals'");
 
     auto resp = client.post_json("/trays", {{"alias", alias}, {"type", tray_type}});
-    std::cout << "Tray created:\n";
-    print_tray(resp);
+    print_summary(resp);
 }
 
 // ---------------------------------------------------------------------------
