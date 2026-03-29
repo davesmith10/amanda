@@ -67,7 +67,7 @@ static void print_tray(const json& t, bool public_only = false) {
 // ---------------------------------------------------------------------------
 // keygen
 // ---------------------------------------------------------------------------
-// Usage: amanda keygen --alias <name> --tray <level> [--pg crystals]
+// Usage: amanda keygen --alias <name> --profile <level> [--pg crystals]
 // ---------------------------------------------------------------------------
 void cmd_keygen(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     std::string alias;
@@ -77,7 +77,7 @@ void cmd_keygen(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     for (size_t i = 0; i < args.size(); ++i) {
         if (args[i] == "--alias" && i + 1 < args.size()) {
             alias = args[++i];
-        } else if (args[i] == "--tray" && i + 1 < args.size()) {
+        } else if (args[i] == "--profile" && i + 1 < args.size()) {
             tray_type = args[++i];
         } else if (args[i] == "--pg" && i + 1 < args.size()) {
             profile_group = args[++i];

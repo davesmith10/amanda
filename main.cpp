@@ -25,7 +25,7 @@ static void usage() {
         "  changepass   [--username <name>]\n"
         "\n"
         "Trays:\n"
-        "  keygen       --alias <name> [--tray <level>] [--pg crystals]\n"
+        "  keygen       --alias <name> [--profile <level>] [--pg crystals]\n"
         "  trays        [-v]\n"
         "  tray         --alias <name> [--public]\n"
         "  export-tray  --alias <name> [--to-file <path>]\n"
