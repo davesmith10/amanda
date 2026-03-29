@@ -8,10 +8,16 @@
 
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace amanda {
+
+class EditConflictError : public std::runtime_error {
+public:
+    explicit EditConflictError(const std::string& msg) : std::runtime_error(msg) {}
+};
 
 class HttpClient {
 public:
@@ -29,9 +35,11 @@ public:
                                const std::string& content_type);
     nlohmann::json put_binary(const std::string& path,
                               const std::vector<uint8_t>& data,
-                              const std::string& content_type);
+                              const std::string& content_type,
+                              const std::string& if_match = "");
     std::vector<uint8_t> get_binary(const std::string& path,
-                                    std::string& content_type_out);
+                                    std::string& content_type_out,
+                                    std::string& etag_out);
     nlohmann::json delete_(const std::string& path);
 
     void save_token(const std::vector<uint8_t>& wire); // writes $HOME/.sarek, chmod 0600

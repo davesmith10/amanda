@@ -30,7 +30,8 @@ void cmd_edit(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     std::string content_type;
     std::vector<uint8_t> original;
     try {
-        original = client.get_binary("/secrets" + path, content_type);
+        std::string etag_unused;
+        original = client.get_binary("/secrets" + path, content_type, etag_unused);
     } catch (const std::exception& e) {
         std::cerr << "Edit failed: " << e.what() << "\n";
         return;

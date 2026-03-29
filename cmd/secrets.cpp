@@ -131,7 +131,8 @@ void cmd_read(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
         throw std::invalid_argument("read: vault path is required");
 
     std::string ct;
-    auto data = client.get_binary("/secrets" + path, ct);
+    std::string etag_unused;
+    auto data = client.get_binary("/secrets" + path, ct, etag_unused);
 
     if (!to_file.empty()) {
         std::ofstream f(to_file, std::ios::binary);
@@ -263,7 +264,8 @@ void cmd_yaml_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& arg
 
     std::string endpoint = "/secrets" + vpath + "/yaml-extract?ypath=" + ypath_enc;
     std::string ct;
-    auto data = client.get_binary(endpoint, ct);
+    std::string etag_unused;
+    auto data = client.get_binary(endpoint, ct, etag_unused);
     std::cout.write(reinterpret_cast<const char*>(data.data()),
                     static_cast<std::streamsize>(data.size()));
     std::cout << "\n";
@@ -295,7 +297,8 @@ void cmd_json_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& arg
 
     std::string endpoint = "/secrets" + vpath + "/json-extract?jptr=" + jptr_enc;
     std::string ct;
-    auto data = client.get_binary(endpoint, ct);
+    std::string etag_unused;
+    auto data = client.get_binary(endpoint, ct, etag_unused);
     std::cout.write(reinterpret_cast<const char*>(data.data()),
                     static_cast<std::streamsize>(data.size()));
     std::cout << "\n";
@@ -345,7 +348,8 @@ void cmd_regex_extract(HttpClient& client, AmandaConfig& /*cfg*/, const Args& ar
         endpoint += "&mode=" + pct_encode(mode);
 
     std::string ct;
-    auto data = client.get_binary(endpoint, ct);
+    std::string etag_unused;
+    auto data = client.get_binary(endpoint, ct, etag_unused);
     std::cout.write(reinterpret_cast<const char*>(data.data()),
                     static_cast<std::streamsize>(data.size()));
     std::cout << "\n";

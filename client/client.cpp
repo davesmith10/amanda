@@ -81,6 +81,9 @@ static void check_response(const httplib::Result& res, const std::string& path,
                 client_for_401->delete_token();
             }
         }
+        if (res->status == 412) {
+            throw EditConflictError(msg);
+        }
         throw std::runtime_error(msg);
     }
 }
@@ -177,8 +180,12 @@ nlohmann::json HttpClient::post_binary(const std::string& path,
 
 nlohmann::json HttpClient::put_binary(const std::string& path,
                                        const std::vector<uint8_t>& data,
-                                       const std::string& content_type) {
+                                       const std::string& content_type,
+                                       const std::string& if_match) {
     auto hdrs = make_headers(token_b64_);
+    if (!if_match.empty()) {
+        hdrs.emplace("If-Match", if_match);
+    }
     std::string body(data.begin(), data.end());
     httplib::Result res;
     if (is_https_) res = https_->Put(path.c_str(), hdrs, body, content_type.c_str());
@@ -188,11 +195,13 @@ nlohmann::json HttpClient::put_binary(const std::string& path,
 }
 
 std::vector<uint8_t> HttpClient::get_binary(const std::string& path,
-                                              std::string& content_type_out) {
+                                              std::string& content_type_out,
+                                              std::string& etag_out) {
     auto hdrs = make_headers(token_b64_);
     httplib::Result res;
     if (is_https_) res = https_->Get(path.c_str(), hdrs);
     else           res = http_->Get(path.c_str(), hdrs);
+    etag_out = res ? res->get_header_value("ETag") : std::string{};
     check_response(res, path, this);
     content_type_out = res->get_header_value("Content-Type");
     return {res->body.begin(), res->body.end()};
