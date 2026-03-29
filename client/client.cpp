@@ -175,6 +175,18 @@ nlohmann::json HttpClient::post_binary(const std::string& path,
     return json::parse(res->body);
 }
 
+nlohmann::json HttpClient::put_binary(const std::string& path,
+                                       const std::vector<uint8_t>& data,
+                                       const std::string& content_type) {
+    auto hdrs = make_headers(token_b64_);
+    std::string body(data.begin(), data.end());
+    httplib::Result res;
+    if (is_https_) res = https_->Put(path.c_str(), hdrs, body, content_type.c_str());
+    else           res = http_->Put(path.c_str(), hdrs, body, content_type.c_str());
+    check_response(res, path, this);
+    return json::parse(res->body);
+}
+
 std::vector<uint8_t> HttpClient::get_binary(const std::string& path,
                                               std::string& content_type_out) {
     auto hdrs = make_headers(token_b64_);

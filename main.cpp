@@ -112,6 +112,7 @@ int main(int argc, char** argv) {
         else if (command == "mark-default") amanda::cmd_mark_default(client, cfg, cmd_args);
         else if (command == "put")          amanda::cmd_create(client, cfg, cmd_args);
         else if (command == "get")          amanda::cmd_read(client, cfg, cmd_args);
+        else if (command == "edit")         amanda::cmd_edit(client, cfg, cmd_args);
         else if (command == "meta")         amanda::cmd_meta(client, cfg, cmd_args);
         else if (command == "list")         amanda::cmd_secrets(client, cfg, cmd_args);
         else if (command == "link")         amanda::cmd_link(client, cfg, cmd_args);

@@ -50,4 +50,7 @@ void cmd_wrap(HttpClient& client, AmandaConfig& cfg, const Args& args);
 // Utility / diagnostic commands
 void cmd_util_cacert(HttpClient& client, AmandaConfig& cfg, const Args& args);
 
+// Editor
+void cmd_edit(HttpClient& client, AmandaConfig& cfg, const Args& args);
+
 } // namespace amanda

@@ -27,6 +27,9 @@ public:
     nlohmann::json post_binary(const std::string& path,
                                const std::vector<uint8_t>& data,
                                const std::string& content_type);
+    nlohmann::json put_binary(const std::string& path,
+                              const std::vector<uint8_t>& data,
+                              const std::string& content_type);
     std::vector<uint8_t> get_binary(const std::string& path,
                                     std::string& content_type_out);
     nlohmann::json delete_(const std::string& path);
