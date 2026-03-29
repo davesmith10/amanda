@@ -6,6 +6,7 @@
 
 #include <cctype>
 #include <cstdio>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -143,6 +144,8 @@ void cmd_read(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     } else {
         std::cout.write(reinterpret_cast<const char*>(data.data()),
                         static_cast<std::streamsize>(data.size()));
+        if (data.empty() || data.back() != '\n')
+            std::cout << '\n';
         std::cout.flush();
     }
 }
@@ -163,10 +166,23 @@ void cmd_meta(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     auto m = client.get("/secrets" + path + "/meta");
     std::cout << "path:      " << path                       << "\n";
     std::cout << "object_id: " << m.value("object_id",  uint64_t{0}) << "\n";
-    std::cout << "created:   " << m.value("created",    uint64_t{0}) << "\n";
+    {
+        int64_t ts = m.value("created", int64_t{0});
+        char buf[64] = {};
+        time_t t = static_cast<time_t>(ts);
+        struct tm* gmt = gmtime(&t);
+        strftime(buf, sizeof(buf), "%A, %-d %B %Y at %-H:%M:%S (GMT)", gmt);
+        std::cout << "created:   " << ts << "/" << buf << "\n";
+    }
     std::cout << "size:      " << m.value("size",        uint64_t{0}) << "\n";
     std::cout << "mimetype:  " << m.value("mimetype",   "") << "\n";
-    std::cout << "tray_id:   " << m.value("tray_id",    "") << "\n";
+    {
+        std::string tid   = m.value("tray_id",    "");
+        std::string talias = m.value("tray_alias", "");
+        std::cout << "tray_id:   " << tid;
+        if (!talias.empty()) std::cout << " (" << talias << ")";
+        std::cout << "\n";
+    }
     if (m.contains("link_path"))
         std::cout << "link_path: " << m["link_path"].get<std::string>() << "\n";
 }

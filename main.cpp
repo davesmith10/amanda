@@ -28,7 +28,7 @@ static void usage() {
         "  keygen       --alias <name> [--profile <level>] [--pg crystals]\n"
         "  trays        [-v]\n"
         "  tray         --alias <name> [--public]\n"
-        "  export-tray  --alias <name> [--to-file <path>]\n"
+        "  export-tray  --alias <name> [--to-file <path>] [--protect [--password-file <path>]]\n"
         "  mark-default --alias <name>\n"
         "\n"
         "Secrets:\n"
