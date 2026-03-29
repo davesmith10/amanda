@@ -182,17 +182,18 @@ void cmd_export_tray(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args
     if (alias.empty())
         throw std::invalid_argument("export-tray: --alias is required");
 
-    auto t = client.get("/trays/" + alias + "/export");
-    std::string out = t.dump(2);
+    std::string ct, etag;
+    auto raw = client.get_binary("/trays/" + alias + "/export", ct, etag);
+    std::string out(raw.begin(), raw.end());
 
     if (!to_file.empty()) {
         std::ofstream f(to_file);
         if (!f.is_open())
             throw std::runtime_error("Cannot write to " + to_file);
-        f << out << "\n";
+        f << out;
         std::cout << "Tray exported to " << to_file << "\n";
     } else {
-        std::cout << out << "\n";
+        std::cout << out;
     }
 }
 
