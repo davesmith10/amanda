@@ -34,6 +34,7 @@ static void usage() {
         "Secrets:\n"
         "  put          <path> [--from-file <f>|--from-text <t>] [--mimetype <m>] [--tray <a>]\n"
         "  get          <path> [--to-file <path>]\n"
+        "  edit         <path>\n"
         "  meta         <path>\n"
         "  list         [--prefix <prefix>]\n"
         "  link         <target-path> <v-path>\n"
