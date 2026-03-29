@@ -29,9 +29,9 @@ void cmd_edit(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     // 1. Fetch current plaintext (server decrypts; LRU cache hit avoids re-decrypt)
     std::string content_type;
     std::vector<uint8_t> original;
+    std::string etag;
     try {
-        std::string etag_unused;
-        original = client.get_binary("/secrets" + path, content_type, etag_unused);
+        original = client.get_binary("/secrets" + path, content_type, etag);
     } catch (const std::exception& e) {
         std::cerr << "Edit failed: " << e.what() << "\n";
         return;
@@ -54,10 +54,13 @@ void cmd_edit(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
         return;
     }
 
-    // 4. Write updated content back
+    // 4. Write updated content back (If-Match guards against concurrent modification)
     try {
-        client.put_binary("/secrets" + path, new_data, content_type);
+        client.put_binary("/secrets" + path, new_data, content_type, etag);
         std::cout << "Edited successfully.\n";
+    } catch (const EditConflictError& e) {
+        std::cerr << "Edit conflict: the secret was modified by another user while you were editing.\n";
+        std::cerr << "Your changes have NOT been saved. Please re-read the secret and try again.\n";
     } catch (const std::exception& e) {
         std::cerr << "Edit failed: " << e.what() << "\n";
     }
