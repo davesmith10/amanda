@@ -187,8 +187,10 @@ void cmd_secrets(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     if (!prefix.empty()) endpoint += "?prefix=" + prefix;
 
     auto resp = client.get(endpoint);
-    for (const auto& p : resp.at("secrets"))
-        std::cout << p.get<std::string>() << "\n";
+    for (const auto& entry : resp.at("secrets")) {
+        bool is_link = entry.value("is_link", false);
+        std::cout << (is_link ? "* " : "  ") << entry.at("path").get<std::string>() << "\n";
+    }
 }
 
 // ---------------------------------------------------------------------------
