@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+#include <termios.h>
+#include <unistd.h>
+
 using json = nlohmann::json;
 
 namespace amanda {
@@ -208,6 +211,49 @@ void cmd_deluser(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
 //   amanda flush-all
 // ---------------------------------------------------------------------------
 void cmd_flush_all(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
+    FILE* tty = std::fopen("/dev/tty", "r+");
+    if (!tty)
+        throw std::runtime_error("flush-all: cannot open /dev/tty for confirmation");
+
+    std::fprintf(tty, "Are you sure? Type 'flush-all' at the prompt to continue, "
+                      "or press the escape key to exit.\n> ");
+    std::fflush(tty);
+
+    int fd = ::fileno(tty);
+    struct termios old_tc{}, raw_tc{};
+    ::tcgetattr(fd, &old_tc);
+    raw_tc = old_tc;
+    raw_tc.c_lflag &= ~(tcflag_t)(ICANON | ECHO);
+    raw_tc.c_cc[VMIN]  = 1;
+    raw_tc.c_cc[VTIME] = 0;
+    ::tcsetattr(fd, TCSANOW, &raw_tc);
+
+    std::string input;
+    bool aborted = false;
+    while (true) {
+        char c;
+        if (::read(fd, &c, 1) <= 0) { aborted = true; break; }
+        if (c == '\x1b') { aborted = true; break; }
+        if (c == '\n' || c == '\r') { std::fputc('\n', tty); std::fflush(tty); break; }
+        if (c == 127 || c == '\b') {        // backspace
+            if (!input.empty()) {
+                input.pop_back();
+                std::fputs("\b \b", tty);
+                std::fflush(tty);
+            }
+        } else {
+            input += c;
+            std::fputc(c, tty);
+            std::fflush(tty);
+        }
+    }
+
+    ::tcsetattr(fd, TCSANOW, &old_tc);
+    std::fclose(tty);
+
+    if (aborted || input != "flush-all")
+        throw std::runtime_error("flush-all: aborted");
+
     auto resp = client.delete_("/admin/flush?confirm=flush");
     std::cout << resp.at("message").get<std::string>() << "\n";
 }

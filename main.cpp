@@ -18,18 +18,18 @@ static void usage() {
         "\n"
         "Identity:\n"
         "  login        [--username <name>] [--token <base64>]\n"
-        "  login:status Check local token validity and expiry (no server contact)\n"
+        "  login-status Check local token validity and expiry (no server contact)\n"
         "  logout\n"
         "  whoami       [--verbose|-v]\n"
-        "  listuser\n"
-        "  changepass   [--username <name>]\n"
+        "  list-users\n"
+        "  change-pw    [--username <name>]\n"
         "\n"
         "Trays:\n"
         "  keygen       --alias <name> [--profile <level>] [--pg crystals]\n"
-        "  trays        [-v]\n"
-        "  tray         --alias <name> [--public]\n"
+        "  trays\n"
         "  export-tray  --alias <name> [--to-file <path>] [--protect [--password-file <path>]]\n"
-        "  mark-default --alias <name>\n"
+        "  mark-default  --alias <name>\n"
+        "  clear-default\n"
         "\n"
         "Secrets:\n"
         "  put          <path> [--from-file <f>|--from-text <t>] [--mimetype <m>] [--tray <a>]\n"
@@ -47,7 +47,7 @@ static void usage() {
         "  regex-extract <path> <pattern> [--mode ecmascript|basic|extended]\n"
         "\n"
         "Utilities:\n"
-        "  util:cacert  Trace CA certificate configuration and check paths\n"
+        "  util-cacert  Trace CA certificate configuration and check paths\n"
         "  wrap         [--ttl <number>[s|m|h|d]]   (reads from stdin)\n"
         "\n"
         "Admin:\n"
@@ -98,19 +98,19 @@ int main(int argc, char** argv) {
         amanda::HttpClient client(cfg, insecure, cfg.cacert);
 
         if      (command == "login")         amanda::cmd_login(client, cfg, cmd_args);
-        else if (command == "login:status")  amanda::cmd_login_status(client, cfg, cmd_args);
+        else if (command == "login-status")  amanda::cmd_login_status(client, cfg, cmd_args);
         else if (command == "logout")        amanda::cmd_logout(client, cfg, cmd_args);
         else if (command == "whoami")       amanda::cmd_whoami(client, cfg, cmd_args);
         else if (command == "newuser")      amanda::cmd_newuser(client, cfg, cmd_args);
-        else if (command == "listuser")     amanda::cmd_listuser(client, cfg, cmd_args);
-        else if (command == "changepass")   amanda::cmd_changepass(client, cfg, cmd_args);
+        else if (command == "list-users")   amanda::cmd_listuser(client, cfg, cmd_args);
+        else if (command == "change-pw")    amanda::cmd_changepass(client, cfg, cmd_args);
         else if (command == "deluser")      amanda::cmd_deluser(client, cfg, cmd_args);
         else if (command == "flush-all")    amanda::cmd_flush_all(client, cfg, cmd_args);
         else if (command == "keygen")       amanda::cmd_keygen(client, cfg, cmd_args);
         else if (command == "trays")        amanda::cmd_trays(client, cfg, cmd_args);
-        else if (command == "tray")         amanda::cmd_tray(client, cfg, cmd_args);
         else if (command == "export-tray")  amanda::cmd_export_tray(client, cfg, cmd_args);
-        else if (command == "mark-default") amanda::cmd_mark_default(client, cfg, cmd_args);
+        else if (command == "mark-default")  amanda::cmd_mark_default(client, cfg, cmd_args);
+        else if (command == "clear-default") amanda::cmd_clear_default(client, cfg, cmd_args);
         else if (command == "put")          amanda::cmd_create(client, cfg, cmd_args);
         else if (command == "get")          amanda::cmd_read(client, cfg, cmd_args);
         else if (command == "edit")         amanda::cmd_edit(client, cfg, cmd_args);
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
         else if (command == "revoke-tokens") amanda::cmd_revoke_tokens(client, cfg, cmd_args);
         else if (command == "revoke-all")    amanda::cmd_revoke_all(client, cfg, cmd_args);
         else if (command == "wrap")          amanda::cmd_wrap(client, cfg, cmd_args);
-        else if (command == "util:cacert")   amanda::cmd_util_cacert(client, cfg, cmd_args);
+        else if (command == "util-cacert")   amanda::cmd_util_cacert(client, cfg, cmd_args);
         else {
             std::cerr << "amanda: unknown command '" << command << "'\n";
             usage();
