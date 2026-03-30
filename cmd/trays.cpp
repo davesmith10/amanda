@@ -362,7 +362,7 @@ void cmd_export_tray(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args
 // ---------------------------------------------------------------------------
 // Usage: amanda mark-default --alias <name>
 // ---------------------------------------------------------------------------
-void cmd_mark_default(HttpClient& /*client*/, AmandaConfig& cfg, const Args& args) {
+void cmd_mark_default(HttpClient& client, AmandaConfig& cfg, const Args& args) {
     std::string alias;
     for (size_t i = 0; i < args.size(); ++i) {
         if (args[i] == "--alias" && i + 1 < args.size())
@@ -370,6 +370,20 @@ void cmd_mark_default(HttpClient& /*client*/, AmandaConfig& cfg, const Args& arg
     }
     if (alias.empty())
         throw std::invalid_argument("mark-default: --alias is required");
+
+    // Verify the tray's assertions overlap with the current user's token scope.
+    json res;
+    try {
+        res = client.get("/trays/" + alias + "/usable");
+    } catch (const std::exception& e) {
+        throw std::runtime_error("mark-default: tray '" + alias +
+                                 "': " + e.what());
+    }
+    if (!res.value("usable", false))
+        throw std::runtime_error("mark-default: tray '" + alias +
+                                 "' assertions do not cover any of your authorized paths; "
+                                 "choose a tray whose scope matches your access");
+
     cfg.default_tray = alias;
     save_config(cfg);
     std::cout << "Default tray set to '" << alias << "'\n";
