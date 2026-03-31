@@ -33,7 +33,7 @@ static std::string read_password_file(const std::string& path) {
 // ---------------------------------------------------------------------------
 // Usage:
 //   amanda login [--username <name>] [--password-file <path>]
-//   amanda login --token <base64> [--password-file <path>]   (invite flow)
+//   amanda login --registration-token <base64> [--password-file <path>]   (invite flow)
 // ---------------------------------------------------------------------------
 void cmd_login(HttpClient& client, AmandaConfig& cfg, const Args& args) {
     std::string username;
@@ -43,7 +43,7 @@ void cmd_login(HttpClient& client, AmandaConfig& cfg, const Args& args) {
     for (size_t i = 0; i < args.size(); ++i) {
         if (args[i] == "--username" && i + 1 < args.size()) {
             username = args[++i];
-        } else if (args[i] == "--token" && i + 1 < args.size()) {
+        } else if (args[i] == "--registration-token" && i + 1 < args.size()) {
             token_arg = args[++i];
         } else if (args[i] == "--password-file" && i + 1 < args.size()) {
             password_file = args[++i];

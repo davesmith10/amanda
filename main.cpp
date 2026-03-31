@@ -17,7 +17,7 @@ static void usage() {
         "  --insecure         Skip TLS certificate verification entirely (dev only)\n"
         "\n"
         "Identity:\n"
-        "  login        [--username <name>] [--token <base64>]\n"
+        "  login        [--username <name>] [--registration-token <base64>] [--password-file <path>]\n"
         "  login-status Check local token validity and expiry (no server contact)\n"
         "  logout\n"
         "  whoami       [--verbose|-v]\n"

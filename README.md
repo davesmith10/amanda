@@ -198,7 +198,7 @@ See [Secret Wrapping](#secret-wrapping) below for full details.
 ### `login`
 
 ```
-amanda login [--username <name>] [--token <base64>]
+amanda login [--username <name>] [--registration-token <base64>] [--password-file <path>]
 ```
 
 **Password login** (normal use):
@@ -214,7 +214,7 @@ Prompts for username (if omitted and not set in `~/.sarekrc`) and password
 **Invite-token login** (first login after an admin runs `newuser`):
 
 ```bash
-amanda login --token $(cat invite.txt)
+amanda login --registration-token $(cat invite.txt)
 ```
 
 Decodes the base64 invite token, saves it to `$HOME/.sarek`, then prompts the
@@ -242,7 +242,7 @@ amanda newuser --username <name> [--assert <scope> ...]
 
 Creates a new user account with no initial password and prints a base64-encoded
 invite token to stdout. The admin sends this token to the new user, who redeems
-it with `amanda login --token`.
+it with `amanda login --registration-token`.
 
 ```bash
 # Admin creates bob with access to /bob/*
@@ -250,7 +250,7 @@ amanda newuser --username bob --assert "slc:/bob/*" > bob_invite.txt
 
 # Send bob_invite.txt to Bob out of band.
 # Bob runs:
-amanda login --token $(cat bob_invite.txt)
+amanda login --registration-token $(cat bob_invite.txt)
 # → prompted to set password; logged in as bob
 ```
 
@@ -683,7 +683,7 @@ amanda newuser --username bob --assert "slc:/bob/*" > bob_invite.txt
 # Step 2: Admin sends bob_invite.txt to Bob out of band (email, Signal, etc.)
 
 # Step 3: Bob redeems the token and sets a password
-amanda login --token $(cat bob_invite.txt)
+amanda login --registration-token $(cat bob_invite.txt)
 # → Set password: ****
 # → Confirm password: ****
 # → Password set. Logged in.
