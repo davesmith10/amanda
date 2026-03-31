@@ -47,6 +47,7 @@ static void usage() {
         "  regex-extract <path> <pattern> [--mode ecmascript|basic|extended]\n"
         "\n"
         "Utilities:\n"
+        "  bearer-token [--ttl <number>[s|m|h|d]] [--assert <scope> ...]\n"
         "  util-cacert  Trace CA certificate configuration and check paths\n"
         "  wrap         [--ttl <number>[s|m|h|d]]   (reads from stdin)\n"
         "\n"
@@ -127,6 +128,7 @@ int main(int argc, char** argv) {
         else if (command == "revoke-tokens") amanda::cmd_revoke_tokens(client, cfg, cmd_args);
         else if (command == "revoke-all")    amanda::cmd_revoke_all(client, cfg, cmd_args);
         else if (command == "wrap")          amanda::cmd_wrap(client, cfg, cmd_args);
+        else if (command == "bearer-token")  amanda::cmd_bearer_token(client, cfg, cmd_args);
         else if (command == "util-cacert")   amanda::cmd_util_cacert(client, cfg, cmd_args);
         else {
             std::cerr << "amanda: unknown command '" << command << "'\n";

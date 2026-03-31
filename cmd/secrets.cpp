@@ -394,7 +394,7 @@ static int64_t parse_ttl_str(const std::string& s) {
         case 'm': return n * 60;
         case 'h': return n * 3600;
         case 'd': return n * 86400;
-        default:  throw std::invalid_argument("wrap: unknown TTL unit '" + std::string(1, unit) + "'");
+        default:  throw std::invalid_argument("unknown TTL unit '" + std::string(1, unit) + "'");
     }
 }
 
@@ -419,6 +419,47 @@ void cmd_wrap(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     std::string endpoint = "/wrap?ttl=" + std::to_string(ttl_secs);
     auto body = client.post_binary(endpoint, plaintext, "application/octet-stream");
     std::string token = body.at("token").get<std::string>();
+    std::cout << token << "\n";
+}
+
+// ---------------------------------------------------------------------------
+// bearer-token
+// ---------------------------------------------------------------------------
+// Usage:
+//   amanda bearer-token [--ttl <number>[s|m|h|d]] [--assert <scope> ...]
+//
+// Issues a bot-tagged, scoped token for scripting. The token is printed to
+// stdout and is NOT saved to ~/.sarek.
+//
+// TTL default: 86400 s (1 day). Range: 600 s (10 min) to 31536000 s (1 year).
+// Assert default: the calling user's own scope assertions.
+// ---------------------------------------------------------------------------
+void cmd_bearer_token(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
+    std::string ttl_str = "86400";
+    std::vector<std::string> assertions;
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == "--ttl" && i + 1 < args.size()) {
+            ttl_str = args[++i];
+        } else if (args[i] == "--assert" && i + 1 < args.size()) {
+            assertions.push_back(args[++i]);
+        }
+    }
+
+    // Build request body
+    json body = json::object();
+    {
+        int64_t ttl_secs = parse_ttl_str(ttl_str);
+        if (ttl_secs < 600 || ttl_secs > 31536000)
+            throw std::invalid_argument(
+                "bearer-token: ttl must be between 600 s (10m) and 31536000 s (1y)");
+        body["ttl"] = ttl_secs;
+    }
+    if (!assertions.empty())
+        body["assertions"] = assertions;
+
+    auto resp = client.post_json("/bearer-token", body);
+    std::string token = resp.at("token").get<std::string>();
     std::cout << token << "\n";
 }
 

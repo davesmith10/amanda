@@ -533,6 +533,58 @@ amanda --cacert ~/.sarek-cert.pem health
 
 ---
 
+### `bearer-token`
+
+```
+amanda bearer-token [--ttl <number>[s|m|h|d]] [--assert <scope> ...]
+```
+
+Issues a long-lived, scoped automation token tagged with `bot:true`. The
+token is printed to stdout and is **not** saved to `~/.sarek`. Use it in
+scripts that need to authenticate to SAREK without an interactive login.
+
+**Flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--ttl <value>` | `1d` (86400 s) | Token lifetime. Accepts `s`, `m`, `h`, `d` suffixes, or a plain integer (seconds). Range: 10m–1y. |
+| `--assert <scope>` | caller's scopes | One or more scope assertions. May be repeated. Must be within your current permissions. |
+
+**Examples:**
+
+```bash
+# Default: inherits your own scopes, lives for 1 day
+amanda bearer-token
+
+# 30-day token, narrowed to a single team path
+amanda bearer-token --ttl 30d --assert "slc:/team-a/*"
+
+# Store in a variable for use in a script
+TOKEN=$(amanda bearer-token --ttl 1h --assert "slc:/ci/*")
+curl -H "Authorization: Bearer $TOKEN" https://vault.example.com/secrets/ci/config
+```
+
+**Scope rules:**
+
+A requested scope must be within your own existing permissions. For
+example, if you have `slc:/alice/*` and `slc:/team-a/*`, then:
+
+| Requested scope | Result |
+|-----------------|--------|
+| `slc:/alice/*` | allowed (same as your scope) |
+| `slc:/alice/scripts/v2` | allowed (exact path under your scope) |
+| `slc:/team-a/ci/*` | allowed (narrower than `/team-a/*`) |
+| `slc:/bob/*` | **denied** (different user's path) |
+| `slc:/a*` | **denied** (wildcard not at path boundary) |
+| `slc:/alice/` | **denied** (trailing slash) |
+
+The issued token always carries a `bot:true` assertion. It is
+registered in the server's token database and will appear in
+`list-tokens` output; it can be revoked with `revoke-token`.
+Omitting `--assert` issues the token with all of your current scopes.
+
+---
+
 ### `wrap`
 
 ```

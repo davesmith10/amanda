@@ -47,6 +47,9 @@ void cmd_revoke_all   (HttpClient& client, AmandaConfig& cfg, const Args& args);
 // Wrap — one-time secret delivery
 void cmd_wrap(HttpClient& client, AmandaConfig& cfg, const Args& args);
 
+// Bearer token — scripting / automation token (output to stdout only)
+void cmd_bearer_token(HttpClient& client, AmandaConfig& cfg, const Args& args);
+
 // Utility / diagnostic commands
 void cmd_util_cacert(HttpClient& client, AmandaConfig& cfg, const Args& args);
 
