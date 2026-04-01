@@ -77,11 +77,153 @@ void CurlEmitter::emit_logout(const Args& /*args*/) {
     ) << "\n";
 }
 
-void CurlEmitter::emit_put        (const Args&) { throw std::runtime_error("emit_put: not yet implemented"); }
-void CurlEmitter::emit_get        (const Args&) { throw std::runtime_error("emit_get: not yet implemented"); }
-void CurlEmitter::emit_meta       (const Args&) { throw std::runtime_error("emit_meta: not yet implemented"); }
-void CurlEmitter::emit_list       (const Args&) { throw std::runtime_error("emit_list: not yet implemented"); }
-void CurlEmitter::emit_link       (const Args&) { throw std::runtime_error("emit_link: not yet implemented"); }
+void CurlEmitter::emit_put(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["path"]      = "";
+    d["from_file"] = "";
+    d["from_text"] = "";
+    d["mimetype"]  = "";
+    d["tray"]      = cfg_.default_tray.empty() ? "system" : cfg_.default_tray;
+
+    bool path_set = false;
+    for (size_t i = 0; i < args.size(); ++i) {
+        if      (args[i] == "--from-file" && i + 1 < args.size()) d["from_file"] = args[++i];
+        else if (args[i] == "--from-text" && i + 1 < args.size()) d["from_text"] = args[++i];
+        else if (args[i] == "--mimetype"  && i + 1 < args.size()) d["mimetype"]  = args[++i];
+        else if (args[i] == "--tray"      && i + 1 < args.size()) d["tray"]      = args[++i];
+        else if (!path_set && !args[i].empty() && args[i][0] != '-') {
+            d["path"] = args[i]; path_set = true;
+        }
+    }
+
+    if (d["path"].empty())
+        throw std::invalid_argument("put --curl: vault path is required");
+
+    if (d["mimetype"].empty()) {
+        if (!d["from_file"].empty()) {
+            d["mimetype"] = "application/octet-stream";
+        } else if (!d["from_text"].empty()) {
+            d["mimetype"] = "text/plain";
+        } else {
+            d["mimetype"] = "application/octet-stream";
+        }
+    }
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+
+    std::string data_arg;
+    if (!d["from_text"].empty()) {
+        data_arg = fmt::format("  --data-raw \"{}\"", d["from_text"]);
+    } else if (!d["from_file"].empty()) {
+        data_arg = fmt::format("  --data-binary \"@{}\"", d["from_file"]);
+    } else {
+        data_arg = "  --data-binary @-";
+    }
+
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X POST \"$HOST/secrets{path}?tray={tray}\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\" \\\n"
+        "  -H \"Content-Type: {mime}\" \\\n"
+        "{data}\n",
+        fmt::arg("tls",  tls),
+        fmt::arg("path", d["path"]),
+        fmt::arg("tray", d["tray"]),
+        fmt::arg("mime", d["mimetype"]),
+        fmt::arg("data", data_arg)
+    ) << "\n";
+}
+
+void CurlEmitter::emit_get(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["path"]    = "";
+    d["to_file"] = "";
+
+    bool path_set = false;
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == "--to-file" && i + 1 < args.size()) d["to_file"] = args[++i];
+        else if (!path_set && !args[i].empty() && args[i][0] != '-') {
+            d["path"] = args[i]; path_set = true;
+        }
+    }
+
+    if (d["path"].empty())
+        throw std::invalid_argument("get --curl: vault path is required");
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::string output_redir = d["to_file"].empty() ? "" :
+        fmt::format(" \\\n  --output \"{}\"", d["to_file"]);
+
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X GET \"$HOST/secrets{path}\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\"{output}\n",
+        fmt::arg("tls",    tls),
+        fmt::arg("path",   d["path"]),
+        fmt::arg("output", output_redir)
+    ) << "\n";
+}
+
+void CurlEmitter::emit_meta(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["path"] = "";
+
+    for (const auto& a : args)
+        if (!a.empty() && a[0] != '-' && d["path"].empty()) d["path"] = a;
+
+    if (d["path"].empty())
+        throw std::invalid_argument("meta --curl: vault path is required");
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X GET \"$HOST/secrets{path}/meta\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\"\n",
+        fmt::arg("tls",  tls),
+        fmt::arg("path", d["path"])
+    ) << "\n";
+}
+
+void CurlEmitter::emit_list(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["prefix"] = "";
+
+    for (size_t i = 0; i < args.size(); ++i)
+        if (args[i] == "--prefix" && i + 1 < args.size()) d["prefix"] = args[++i];
+
+    std::string endpoint = "$HOST/secrets";
+    if (!d["prefix"].empty()) endpoint += "?prefix=" + d["prefix"];
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X GET \"{endpoint}\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\"\n",
+        fmt::arg("tls",      tls),
+        fmt::arg("endpoint", endpoint)
+    ) << "\n";
+}
+
+void CurlEmitter::emit_link(const Args& args) {
+    if (args.size() < 2)
+        throw std::invalid_argument("link --curl: usage: link <target-path> <v-path>");
+
+    std::unordered_map<std::string, std::string> d;
+    d["target"] = args[0];
+    d["link"]   = args[1];
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X POST \"$HOST/links\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\" \\\n"
+        "  -H 'Content-Type: application/json' \\\n"
+        "  -d '{{\"target\":\"{target}\",\"link\":\"{link}\"}}'\n",
+        fmt::arg("tls",    tls),
+        fmt::arg("target", d["target"]),
+        fmt::arg("link",   d["link"])
+    ) << "\n";
+}
 
 void CurlEmitter::emit_health(const Args& /*args*/) {
     std::unordered_map<std::string, std::string> d;
@@ -95,8 +237,41 @@ void CurlEmitter::emit_health(const Args& /*args*/) {
         fmt::arg("host", d["host"])
     ) << "\n";
 }
-void CurlEmitter::emit_keygen     (const Args&) { throw std::runtime_error("emit_keygen: not yet implemented"); }
-void CurlEmitter::emit_trays      (const Args&) { throw std::runtime_error("emit_trays: not yet implemented"); }
+void CurlEmitter::emit_keygen(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["alias"]   = "<alias>";
+    d["profile"] = "";
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        if      (args[i] == "--alias"   && i + 1 < args.size()) d["alias"]   = args[++i];
+        else if (args[i] == "--profile" && i + 1 < args.size()) d["profile"] = args[++i];
+    }
+
+    std::string body_inner = fmt::format("\"alias\":\"{}\"", d["alias"]);
+    if (!d["profile"].empty())
+        body_inner += fmt::format(",\"profile\":\"{}\"", d["profile"]);
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X POST \"$HOST/trays\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\" \\\n"
+        "  -H 'Content-Type: application/json' \\\n"
+        "  -d '{{{body}}}'\n",
+        fmt::arg("tls",  tls),
+        fmt::arg("body", body_inner)
+    ) << "\n";
+}
+
+void CurlEmitter::emit_trays(const Args& /*args*/) {
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X GET \"$HOST/trays\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\"\n",
+        fmt::arg("tls", tls)
+    ) << "\n";
+}
 void CurlEmitter::emit_wrap       (const Args&) { throw std::runtime_error("emit_wrap: not yet implemented"); }
 void CurlEmitter::emit_newuser    (const Args&) { throw std::runtime_error("emit_newuser: not yet implemented"); }
 void CurlEmitter::emit_listuser   (const Args&) { throw std::runtime_error("emit_listuser: not yet implemented"); }

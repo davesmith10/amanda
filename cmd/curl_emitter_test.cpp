@@ -100,6 +100,117 @@ static void test_emit_logout() {
     check("logout: TOKEN=mytoken==",      contains(out, "TOKEN=mytoken=="));
 }
 
+// ── put / get / meta / list ───────────────────────────────────────────────────
+
+static void test_emit_put_from_text() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url   = "https://localhost:8443";
+    cfg.default_tray = "team-a";
+    amanda::CurlEmitter e(cfg, true, "tok==");
+    std::string out = capture([&]{
+        e.emit_put({"/team-a/dbpassword", "--from-text", "hunter2"});
+    });
+    check("put/text: POST /secrets",  contains(out, "POST"));
+    check("put/text: path in URL",    contains(out, "/team-a/dbpassword"));
+    check("put/text: tray=team-a",    contains(out, "tray=team-a"));
+    check("put/text: --data-raw",     contains(out, "--data-raw"));
+    check("put/text: hunter2",        contains(out, "hunter2"));
+    check("put/text: TOKEN=tok==",    contains(out, "TOKEN=tok=="));
+}
+
+static void test_emit_put_from_file() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{
+        e.emit_put({"/mypath", "--from-file", "/tmp/cert.pem"});
+    });
+    check("put/file: --data-binary @file", contains(out, "--data-binary \"@/tmp/cert.pem\""));
+}
+
+static void test_emit_put_stdin() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{
+        e.emit_put({"/mypath"});
+    });
+    check("put/stdin: --data-binary @-", contains(out, "--data-binary @-"));
+}
+
+static void test_emit_get() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, true, "tok==");
+    std::string out = capture([&]{ e.emit_get({"/foo/bar"}); });
+    check("get: GET /secrets",   contains(out, "GET"));
+    check("get: path in URL",    contains(out, "/foo/bar"));
+    check("get: auth header",    contains(out, "Authorization: Bearer $TOKEN"));
+}
+
+static void test_emit_get_to_file() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_get({"/foo/bar", "--to-file", "/tmp/out.txt"}); });
+    check("get/tofile: --output flag", contains(out, "--output \"/tmp/out.txt\""));
+}
+
+static void test_emit_meta() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_meta({"/foo/bar"}); });
+    check("meta: /meta suffix", contains(out, "/foo/bar/meta"));
+}
+
+static void test_emit_list_no_prefix() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_list({}); });
+    check("list: GET /secrets", contains(out, "/secrets"));
+}
+
+static void test_emit_list_with_prefix() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_list({"--prefix", "/team-a"}); });
+    check("list: prefix param", contains(out, "prefix=/team-a"));
+}
+
+// ── link / keygen / trays ─────────────────────────────────────────────────────
+
+static void test_emit_link() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_link({"/real/path", "/link/path"}); });
+    check("link: POST /links",       contains(out, "POST"));
+    check("link: target in body",    contains(out, "/real/path"));
+    check("link: link in body",      contains(out, "/link/path"));
+    check("link: Content-Type json", contains(out, "application/json"));
+}
+
+static void test_emit_keygen_with_alias() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_keygen({"--alias", "my-tray"}); });
+    check("keygen: POST /trays",   contains(out, "POST"));
+    check("keygen: alias in body", contains(out, "my-tray"));
+}
+
+static void test_emit_trays() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_trays({}); });
+    check("trays: GET /trays",    contains(out, "GET"));
+    check("trays: /trays in URL", contains(out, "/trays"));
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────
 
 int main() {
@@ -111,6 +222,17 @@ int main() {
     test_emit_login_default();
     test_emit_login_override_username();
     test_emit_logout();
+    test_emit_put_from_text();
+    test_emit_put_from_file();
+    test_emit_put_stdin();
+    test_emit_get();
+    test_emit_get_to_file();
+    test_emit_meta();
+    test_emit_list_no_prefix();
+    test_emit_list_with_prefix();
+    test_emit_link();
+    test_emit_keygen_with_alias();
+    test_emit_trays();
 
     std::cout << "\n" << (failures == 0 ? "All tests passed.\n"
                                         : std::to_string(failures) + " test(s) FAILED.\n");
