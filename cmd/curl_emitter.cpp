@@ -35,14 +35,66 @@ std::string CurlEmitter::auth_preamble() const {
     return host_line() + token_line();
 }
 
-void CurlEmitter::emit_login      (const Args&) { throw std::runtime_error("emit_login: not yet implemented"); }
-void CurlEmitter::emit_logout     (const Args&) { throw std::runtime_error("emit_logout: not yet implemented"); }
+void CurlEmitter::emit_login(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["host"]     = server_url_;
+    d["tls"]      = tls_flags();
+    d["username"] = cfg_.username.empty() ? "<username>" : cfg_.username;
+    d["password"] = "<password>";   // interactive; placeholder by design
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == "--username" && i + 1 < args.size())
+            d["username"] = args[++i];
+    }
+
+    std::string tls = d["tls"].empty() ? "" : " " + d["tls"];
+    std::cout << fmt::format(
+        "TOKEN=$(curl -s{tls} -X POST \"{host}/login\" \\\n"
+        "  -H 'Content-Type: application/json' \\\n"
+        "  -d '{{\"username\":\"{username}\",\"password\":\"{password}\"}}' \\\n"
+        "  | jq -r .token)\n"
+        "\n"
+        "echo \"Token: $TOKEN\"\n",
+        fmt::arg("tls",      tls),
+        fmt::arg("host",     d["host"]),
+        fmt::arg("username", d["username"]),
+        fmt::arg("password", d["password"])
+    ) << "\n";
+}
+
+void CurlEmitter::emit_logout(const Args& /*args*/) {
+    std::unordered_map<std::string, std::string> d;
+    d["host"] = server_url_;
+    d["tls"]  = tls_flags();
+
+    std::string tls = d["tls"].empty() ? "" : " " + d["tls"];
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X DELETE \"{host}/logout\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\"\n",
+        fmt::arg("tls",  tls),
+        fmt::arg("host", d["host"])
+    ) << "\n";
+}
+
 void CurlEmitter::emit_put        (const Args&) { throw std::runtime_error("emit_put: not yet implemented"); }
 void CurlEmitter::emit_get        (const Args&) { throw std::runtime_error("emit_get: not yet implemented"); }
 void CurlEmitter::emit_meta       (const Args&) { throw std::runtime_error("emit_meta: not yet implemented"); }
 void CurlEmitter::emit_list       (const Args&) { throw std::runtime_error("emit_list: not yet implemented"); }
 void CurlEmitter::emit_link       (const Args&) { throw std::runtime_error("emit_link: not yet implemented"); }
-void CurlEmitter::emit_health     (const Args&) { throw std::runtime_error("emit_health: not yet implemented"); }
+
+void CurlEmitter::emit_health(const Args& /*args*/) {
+    std::unordered_map<std::string, std::string> d;
+    d["host"] = server_url_;
+    d["tls"]  = tls_flags();
+
+    std::string tls = d["tls"].empty() ? "" : " " + d["tls"];
+    std::cout << fmt::format(
+        "curl -s{tls} -X GET \"{host}/health\"\n",
+        fmt::arg("tls",  tls),
+        fmt::arg("host", d["host"])
+    ) << "\n";
+}
 void CurlEmitter::emit_keygen     (const Args&) { throw std::runtime_error("emit_keygen: not yet implemented"); }
 void CurlEmitter::emit_trays      (const Args&) { throw std::runtime_error("emit_trays: not yet implemented"); }
 void CurlEmitter::emit_wrap       (const Args&) { throw std::runtime_error("emit_wrap: not yet implemented"); }
