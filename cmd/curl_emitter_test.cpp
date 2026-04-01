@@ -211,6 +211,47 @@ static void test_emit_trays() {
     check("trays: /trays in URL", contains(out, "/trays"));
 }
 
+// ── wrap / newuser / listuser / changepass ────────────────────────────────────
+
+static void test_emit_wrap() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_wrap({"--ttl", "7200"}); });
+    check("wrap: POST /wrap",        contains(out, "POST"));
+    check("wrap: ttl=7200",          contains(out, "ttl=7200"));
+    check("wrap: --data-binary @-",  contains(out, "--data-binary @-"));
+    check("wrap: jq .token",         contains(out, "jq -r .token"));
+}
+
+static void test_emit_newuser() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_newuser({"--username", "bob"}); });
+    check("newuser: POST /users/invite", contains(out, "/users/invite"));
+    check("newuser: username bob",       contains(out, "bob"));
+}
+
+static void test_emit_listuser() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_listuser({}); });
+    check("listuser: GET /users",  contains(out, "GET"));
+    check("listuser: /users URL",  contains(out, "/users"));
+}
+
+static void test_emit_changepass() {
+    amanda::AmandaConfig cfg;
+    cfg.server_url = "https://localhost:8443";
+    cfg.username   = "alice";
+    amanda::CurlEmitter e(cfg, false, "tok==");
+    std::string out = capture([&]{ e.emit_changepass({}); });
+    check("changepass: POST .../password", contains(out, "/users/alice/password"));
+    check("changepass: password placeholder", contains(out, "<new-password>"));
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────
 
 int main() {
@@ -233,6 +274,10 @@ int main() {
     test_emit_link();
     test_emit_keygen_with_alias();
     test_emit_trays();
+    test_emit_wrap();
+    test_emit_newuser();
+    test_emit_listuser();
+    test_emit_changepass();
 
     std::cout << "\n" << (failures == 0 ? "All tests passed.\n"
                                         : std::to_string(failures) + " test(s) FAILED.\n");

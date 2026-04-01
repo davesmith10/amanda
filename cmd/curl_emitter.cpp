@@ -272,9 +272,89 @@ void CurlEmitter::emit_trays(const Args& /*args*/) {
         fmt::arg("tls", tls)
     ) << "\n";
 }
-void CurlEmitter::emit_wrap       (const Args&) { throw std::runtime_error("emit_wrap: not yet implemented"); }
-void CurlEmitter::emit_newuser    (const Args&) { throw std::runtime_error("emit_newuser: not yet implemented"); }
-void CurlEmitter::emit_listuser   (const Args&) { throw std::runtime_error("emit_listuser: not yet implemented"); }
-void CurlEmitter::emit_changepass (const Args&) { throw std::runtime_error("emit_changepass: not yet implemented"); }
+void CurlEmitter::emit_wrap(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["ttl"] = "3600";
+
+    for (size_t i = 0; i < args.size(); ++i)
+        if (args[i] == "--ttl" && i + 1 < args.size()) d["ttl"] = args[++i];
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "# Pipe the secret into stdin:\n"
+        "echo -n \"<secret>\" | curl -s{tls} -X POST \"$HOST/wrap?ttl={ttl}\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\" \\\n"
+        "  -H 'Content-Type: application/octet-stream' \\\n"
+        "  --data-binary @- \\\n"
+        "  | jq -r .token\n",
+        fmt::arg("tls", tls),
+        fmt::arg("ttl", d["ttl"])
+    ) << "\n";
+}
+
+void CurlEmitter::emit_newuser(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["username"] = "<username>";
+    std::vector<std::string> assertions;
+
+    for (size_t i = 0; i < args.size(); ++i) {
+        if      (args[i] == "--username" && i + 1 < args.size()) d["username"] = args[++i];
+        else if (args[i] == "--assert"   && i + 1 < args.size()) assertions.push_back(args[++i]);
+    }
+
+    std::string asserts_json = "[]";
+    if (!assertions.empty()) {
+        asserts_json = "[";
+        for (size_t i = 0; i < assertions.size(); ++i) {
+            if (i) asserts_json += ",";
+            asserts_json += "\"" + assertions[i] + "\"";
+        }
+        asserts_json += "]";
+    }
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X POST \"$HOST/users/invite\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\" \\\n"
+        "  -H 'Content-Type: application/json' \\\n"
+        "  -d '{{\"username\":\"{username}\",\"assertions\":{asserts}}}'\n",
+        fmt::arg("tls",      tls),
+        fmt::arg("username", d["username"]),
+        fmt::arg("asserts",  asserts_json)
+    ) << "\n";
+}
+
+void CurlEmitter::emit_listuser(const Args& /*args*/) {
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X GET \"$HOST/users\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\"\n",
+        fmt::arg("tls", tls)
+    ) << "\n";
+}
+
+void CurlEmitter::emit_changepass(const Args& args) {
+    std::unordered_map<std::string, std::string> d;
+    d["username"] = cfg_.username.empty() ? "<username>" : cfg_.username;
+    d["password"] = "<new-password>";
+
+    for (size_t i = 0; i < args.size(); ++i)
+        if (args[i] == "--username" && i + 1 < args.size()) d["username"] = args[++i];
+
+    std::string tls = tls_flags().empty() ? "" : " " + tls_flags();
+    std::cout << auth_preamble()
+              << fmt::format(
+        "curl -s{tls} -X POST \"$HOST/users/{username}/password\" \\\n"
+        "  -H \"Authorization: Bearer $TOKEN\" \\\n"
+        "  -H 'Content-Type: application/json' \\\n"
+        "  -d '{{\"password\":\"{password}\"}}'\n",
+        fmt::arg("tls",      tls),
+        fmt::arg("username", d["username"]),
+        fmt::arg("password", d["password"])
+    ) << "\n";
+}
 
 } // namespace amanda
