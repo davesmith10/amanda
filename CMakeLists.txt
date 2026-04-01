@@ -19,6 +19,11 @@ find_library(TBB_LIB      tbb
 set(CRYSTALS_INC /usr/local/include)
 set(XKCP_INC /mnt/c/Users/daves/OneDrive/Desktop/Crystals/XKCP/bin/x86-64/libXKCP.so.headers)
 
+# ── fmt (curl emitter) ────────────────────────────────────────────────────────
+set(FMT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../fmt)
+find_library(FMT_LIB fmt PATHS ${FMT_ROOT}/build REQUIRED)
+set(FMT_INC ${FMT_ROOT}/include)
+
 # ── amanda_client (config + HTTP client) ──────────────────────────────────────
 add_library(amanda_client STATIC
     config/amanda_config.cpp
@@ -50,7 +55,9 @@ add_executable(amanda
     cmd/tokens.cpp
     cmd/util.cpp
     cmd/edit.cpp
+    cmd/curl_emitter.cpp
     util/editor_util.cpp
 )
-target_link_libraries(amanda PRIVATE amanda_client)
+target_link_libraries(amanda PRIVATE amanda_client ${FMT_LIB})
+target_include_directories(amanda PRIVATE ${FMT_INC})
 target_compile_options(amanda PRIVATE -Wall -Wextra)
