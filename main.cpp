@@ -1,6 +1,7 @@
 #include "config/amanda_config.hpp"
 #include "client/client.hpp"
 #include "cmd/commands.hpp"
+#include "cmd/curl_emitter.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -15,6 +16,7 @@ static void usage() {
         "  --server <url>     Override server URL from ~/.sarekrc\n"
         "  --cacert <path>    PEM file to trust for server certificate verification\n"
         "  --insecure         Skip TLS certificate verification entirely (dev only)\n"
+        "  --curl             Emit equivalent curl command(s) instead of executing\n"
         "\n"
         "Identity:\n"
         "  login        [--username <name>] [--registration-token <base64>] [--password-file <path>]\n"
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
     std::string server_override;
     std::string cacert;
     bool insecure  = false;
+    bool curl_mode = false;
     std::string command;
     amanda::Args cmd_args;
 
@@ -76,6 +79,8 @@ int main(int argc, char** argv) {
             cacert = argv[++i];
         } else if (arg == "--insecure") {
             insecure = true;
+        } else if (arg == "--curl") {
+            curl_mode = true;
         } else if (command.empty()) {
             command = arg;
         } else {
@@ -97,6 +102,31 @@ int main(int argc, char** argv) {
             cfg.cacert = cacert;
 
         amanda::HttpClient client(cfg, insecure, cfg.cacert);
+
+        if (curl_mode) {
+            std::string tok = client.has_token() ? client.token_b64() : "";
+            amanda::CurlEmitter emitter(cfg, insecure, tok);
+
+            if      (command == "login")      emitter.emit_login(cmd_args);
+            else if (command == "logout")     emitter.emit_logout(cmd_args);
+            else if (command == "put")        emitter.emit_put(cmd_args);
+            else if (command == "get")        emitter.emit_get(cmd_args);
+            else if (command == "meta")       emitter.emit_meta(cmd_args);
+            else if (command == "list")       emitter.emit_list(cmd_args);
+            else if (command == "link")       emitter.emit_link(cmd_args);
+            else if (command == "health")     emitter.emit_health(cmd_args);
+            else if (command == "keygen")     emitter.emit_keygen(cmd_args);
+            else if (command == "trays")      emitter.emit_trays(cmd_args);
+            else if (command == "wrap")       emitter.emit_wrap(cmd_args);
+            else if (command == "newuser")    emitter.emit_newuser(cmd_args);
+            else if (command == "list-users") emitter.emit_listuser(cmd_args);
+            else if (command == "change-pw")  emitter.emit_changepass(cmd_args);
+            else {
+                std::cerr << "amanda: --curl not supported for command '" << command << "'\n";
+                return 1;
+            }
+            return 0;
+        }
 
         if      (command == "login")         amanda::cmd_login(client, cfg, cmd_args);
         else if (command == "login-status")  amanda::cmd_login_status(client, cfg, cmd_args);
