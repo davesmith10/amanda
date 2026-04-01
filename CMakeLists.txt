@@ -61,3 +61,15 @@ add_executable(amanda
 target_link_libraries(amanda PRIVATE amanda_client ${FMT_LIB})
 target_include_directories(amanda PRIVATE ${FMT_INC})
 target_compile_options(amanda PRIVATE -Wall -Wextra)
+
+# ── curl emitter tests ────────────────────────────────────────────────────────
+add_executable(amanda_curl_test
+    cmd/curl_emitter_test.cpp
+    cmd/curl_emitter.cpp
+)
+target_link_libraries(amanda_curl_test PRIVATE amanda_client ${FMT_LIB})
+target_include_directories(amanda_curl_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${FMT_INC}
+)
+target_compile_options(amanda_curl_test PRIVATE -Wall -Wextra)
