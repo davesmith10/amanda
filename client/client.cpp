@@ -79,6 +79,7 @@ static void check_response(const httplib::Result& res, const std::string& path,
             if (msg == "invalid token, please login" ||
                 msg == "token revoked, please login") {
                 client_for_401->delete_token();
+                client_for_401->delete_oauth_token();
             }
         }
         if (res->status == 412) {
@@ -110,6 +111,9 @@ HttpClient::HttpClient(const AmandaConfig& cfg, bool insecure,
         http_ = std::make_unique<httplib::Client>(host, port);
     }
     load_token_from_file();
+    const char* home2 = std::getenv("HOME");
+    oauth_token_path_ = home2 ? std::string(home2) + "/.sarek.oauth" : ".sarek.oauth";
+    load_oauth_token_from_file();
 }
 
 void HttpClient::load_token_from_file() {
@@ -144,12 +148,46 @@ bool HttpClient::has_token() const {
     return !token_b64_.empty();
 }
 
+const std::string& HttpClient::active_token() const {
+    if (!oauth_bearer_.empty()) return oauth_bearer_;
+    return token_b64_;
+}
+
+void HttpClient::load_oauth_token_from_file() {
+    std::ifstream f(oauth_token_path_, std::ios::binary);
+    if (!f) return;
+    std::string jwt((std::istreambuf_iterator<char>(f)),
+                     std::istreambuf_iterator<char>());
+    // Strip trailing whitespace
+    while (!jwt.empty() && (jwt.back()=='\n'||jwt.back()=='\r'||jwt.back()==' '))
+        jwt.pop_back();
+    if (!jwt.empty()) oauth_bearer_ = std::move(jwt);
+}
+
+void HttpClient::save_oauth_token(const std::string& jwt_str) {
+    std::ofstream f(oauth_token_path_, std::ios::binary | std::ios::trunc);
+    if (!f) throw std::runtime_error("cannot write " + oauth_token_path_);
+    f.write(jwt_str.data(), static_cast<std::streamsize>(jwt_str.size()));
+    f.close();
+    chmod(oauth_token_path_.c_str(), 0600);
+    oauth_bearer_ = jwt_str;
+}
+
+void HttpClient::delete_oauth_token() {
+    oauth_bearer_.clear();
+    ::unlink(oauth_token_path_.c_str());
+}
+
+bool HttpClient::has_oauth_token() const {
+    return !oauth_bearer_.empty();
+}
+
 // ---------------------------------------------------------------------------
 // HTTP verbs
 // ---------------------------------------------------------------------------
 
 nlohmann::json HttpClient::get(const std::string& path) {
-    auto hdrs = make_headers(token_b64_);
+    auto hdrs = make_headers(active_token());
     httplib::Result res;
     if (is_https_) res = https_->Get(path.c_str(), hdrs);
     else           res = http_->Get(path.c_str(), hdrs);
@@ -158,7 +196,7 @@ nlohmann::json HttpClient::get(const std::string& path) {
 }
 
 nlohmann::json HttpClient::post_json(const std::string& path, const nlohmann::json& body) {
-    auto hdrs = make_headers(token_b64_);
+    auto hdrs = make_headers(active_token());
     httplib::Result res;
     if (is_https_) res = https_->Post(path.c_str(), hdrs, body.dump(), "application/json");
     else           res = http_->Post(path.c_str(), hdrs, body.dump(), "application/json");
@@ -169,7 +207,7 @@ nlohmann::json HttpClient::post_json(const std::string& path, const nlohmann::js
 nlohmann::json HttpClient::post_binary(const std::string& path,
                                         const std::vector<uint8_t>& data,
                                         const std::string& content_type) {
-    auto hdrs = make_headers(token_b64_);
+    auto hdrs = make_headers(active_token());
     std::string body(data.begin(), data.end());
     httplib::Result res;
     if (is_https_) res = https_->Post(path.c_str(), hdrs, body, content_type.c_str());
@@ -182,7 +220,7 @@ nlohmann::json HttpClient::put_binary(const std::string& path,
                                        const std::vector<uint8_t>& data,
                                        const std::string& content_type,
                                        const std::string& if_match) {
-    auto hdrs = make_headers(token_b64_);
+    auto hdrs = make_headers(active_token());
     if (!if_match.empty()) {
         hdrs.emplace("If-Match", if_match);
     }
@@ -197,7 +235,7 @@ nlohmann::json HttpClient::put_binary(const std::string& path,
 std::vector<uint8_t> HttpClient::get_binary(const std::string& path,
                                               std::string& content_type_out,
                                               std::string& etag_out) {
-    auto hdrs = make_headers(token_b64_);
+    auto hdrs = make_headers(active_token());
     httplib::Result res;
     if (is_https_) res = https_->Get(path.c_str(), hdrs);
     else           res = http_->Get(path.c_str(), hdrs);
@@ -208,7 +246,7 @@ std::vector<uint8_t> HttpClient::get_binary(const std::string& path,
 }
 
 nlohmann::json HttpClient::delete_(const std::string& path) {
-    auto hdrs = make_headers(token_b64_);
+    auto hdrs = make_headers(active_token());
     httplib::Result res;
     if (is_https_) res = https_->Delete(path.c_str(), hdrs);
     else           res = http_->Delete(path.c_str(), hdrs);

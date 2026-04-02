@@ -47,6 +47,12 @@ public:
     bool has_token() const;
     const std::string& token_b64() const { return token_b64_; }
 
+    // OAuth JWT token (stored in $HOME/.sarek.oauth)
+    void save_oauth_token(const std::string& jwt_str); // chmod 0600
+    void delete_oauth_token();
+    bool has_oauth_token() const;
+    const std::string& oauth_bearer() const { return oauth_bearer_; }
+
 private:
     void load_token_from_file();
 
@@ -55,6 +61,10 @@ private:
     bool        is_https_   = true;
     std::string token_b64_;
     std::string token_path_;
+    std::string oauth_bearer_;      // raw JWT string for Bearer header (NOT base64)
+    std::string oauth_token_path_;
+    void load_oauth_token_from_file();
+    const std::string& active_token() const;  // returns oauth_bearer_ if set, else token_b64_
 };
 
 } // namespace amanda
