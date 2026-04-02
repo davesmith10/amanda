@@ -41,6 +41,7 @@ public:
                                     std::string& content_type_out,
                                     std::string& etag_out);
     nlohmann::json delete_(const std::string& path);
+    nlohmann::json delete_with_body(const std::string& path, const nlohmann::json& body);
 
     void save_token(const std::vector<uint8_t>& wire); // writes $HOME/.sarek, chmod 0600
     void delete_token();

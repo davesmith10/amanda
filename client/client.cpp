@@ -254,4 +254,15 @@ nlohmann::json HttpClient::delete_(const std::string& path) {
     return json::parse(res->body);
 }
 
+nlohmann::json HttpClient::delete_with_body(const std::string& path, const nlohmann::json& body) {
+    auto hdrs = make_headers(active_token());
+    httplib::Result res;
+    if (is_https_)
+        res = https_->Delete(path.c_str(), hdrs, body.dump(), "application/json");
+    else
+        res = http_->Delete(path.c_str(), hdrs, body.dump(), "application/json");
+    check_response(res, path, this);
+    return json::parse(res->body);
+}
+
 } // namespace amanda
