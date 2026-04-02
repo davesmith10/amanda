@@ -53,6 +53,7 @@ add_executable(amanda
     cmd/trays.cpp
     cmd/secrets.cpp
     cmd/tokens.cpp
+    cmd/oauth.cpp
     cmd/util.cpp
     cmd/edit.cpp
     cmd/curl_emitter.cpp
