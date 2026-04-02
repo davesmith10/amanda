@@ -95,6 +95,7 @@ void cmd_login(HttpClient& client, AmandaConfig& cfg, const Args& args) {
 void cmd_logout(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
     client.delete_("/logout");
     client.delete_token();
+    client.delete_oauth_token();
     std::cout << "Logged out\n";
 }
 
@@ -109,6 +110,12 @@ void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
     bool verbose = false;
     for (const auto& a : args)
         if (a == "--verbose" || a == "-v") verbose = true;
+
+    if (!client.has_token() && client.has_oauth_token()) {
+        std::cout << "Logged in via OAuth JWT.\n";
+        std::cout << "Use 'amanda login-oauth' to renew before expiry.\n";
+        return;
+    }
 
     if (!client.has_token())
         throw std::runtime_error("not logged in (no token file found)");
@@ -200,6 +207,12 @@ void cmd_whoami(HttpClient& client, AmandaConfig& /*cfg*/, const Args& args) {
 // Reads the local token and prints its validity without contacting the server.
 // ---------------------------------------------------------------------------
 void cmd_login_status(HttpClient& client, AmandaConfig& /*cfg*/, const Args& /*args*/) {
+    if (!client.has_token() && client.has_oauth_token()) {
+        std::cout << "OAuth JWT session active (token in ~/.sarek.oauth).\n";
+        std::cout << "No bespoke token present — use 'amanda login' for bespoke session.\n";
+        return;
+    }
+
     if (!client.has_token()) {
         std::cout << "not logged in\n";
         return;

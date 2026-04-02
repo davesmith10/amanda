@@ -106,6 +106,8 @@ void cmd_login_oauth(HttpClient& client, AmandaConfig& cfg, const Args& args) {
         body["ttl"] = ttl_str;
 
     auto resp = client.post_json("/oauth/token", body);
+    // Zero the local secret copy as soon as we're done with it
+    std::fill(client_secret.begin(), client_secret.end(), '\0');
 
     std::string jwt        = resp.at("access_token").get<std::string>();
     int64_t     expires_in = resp.value("expires_in", 3600LL);

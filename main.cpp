@@ -109,7 +109,9 @@ int main(int argc, char** argv) {
         amanda::HttpClient client(cfg, insecure, cfg.cacert);
 
         if (curl_mode) {
-            std::string tok = client.has_token() ? client.token_b64() : "";
+            std::string tok = client.has_oauth_token() ? client.oauth_bearer()
+                            : client.has_token()        ? client.token_b64()
+                            : "";
             amanda::CurlEmitter emitter(cfg, insecure, tok);
 
             if      (command == "login")      emitter.emit_login(cmd_args);
