@@ -9,6 +9,7 @@ struct AmandaConfig {
     std::string default_tray;   // alias used by create command
     std::string cacert;         // path to PEM CA cert for server verification
     std::string username;       // default username for login
+    std::string oauth_client_id;   // stored by oauth-setup; used by login-oauth
 };
 
 // Load $HOME/.sarekrc. Returns defaults if file doesn't exist.
