@@ -54,7 +54,7 @@ static void usage() {
         "  wrap         [--ttl <number>[s|m|h|d]]   (reads from stdin)\n"
         "\n"
         "OAuth:\n"
-        "  login-oauth  [--client-id <id>] [--ttl <duration>]\n"
+        "  login-oauth  [--client-id <id>] [--ttl <number>[s|m|h|d]]\n"
         "\n"
         "Admin:\n"
         "  newuser      --username <name> [--assert <scope> ...]\n"
