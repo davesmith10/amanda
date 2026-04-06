@@ -35,6 +35,7 @@ AmandaConfig load_config() {
     if (y["default_tray"]) cfg.default_tray = y["default_tray"].as<std::string>();
     if (y["cacert"])       cfg.cacert       = expand_tilde(y["cacert"].as<std::string>());
     if (y["username"])     cfg.username     = y["username"].as<std::string>();
+    if (y["oauth_client_id"]) cfg.oauth_client_id = y["oauth_client_id"].as<std::string>();
     return cfg;
 }
 
@@ -49,6 +50,8 @@ void save_config(const AmandaConfig& cfg) {
         f << "cacert: " << cfg.cacert << "\n";
     if (!cfg.username.empty())
         f << "username: " << cfg.username << "\n";
+    if (!cfg.oauth_client_id.empty())
+        f << "oauth_client_id: " << cfg.oauth_client_id << "\n";
 }
 
 } // namespace amanda

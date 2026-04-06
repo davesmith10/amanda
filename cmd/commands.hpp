@@ -44,6 +44,11 @@ void cmd_revoke_token (HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_revoke_tokens(HttpClient& client, AmandaConfig& cfg, const Args& args);
 void cmd_revoke_all   (HttpClient& client, AmandaConfig& cfg, const Args& args);
 
+// OAuth2 / OIDC
+void cmd_oauth_setup  (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_oauth_revoke (HttpClient& client, AmandaConfig& cfg, const Args& args);
+void cmd_login_oauth  (HttpClient& client, AmandaConfig& cfg, const Args& args);
+
 // Wrap — one-time secret delivery
 void cmd_wrap(HttpClient& client, AmandaConfig& cfg, const Args& args);
 

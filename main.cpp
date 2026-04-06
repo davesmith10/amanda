@@ -53,6 +53,9 @@ static void usage() {
         "  util-cacert  Trace CA certificate configuration and check paths\n"
         "  wrap         [--ttl <number>[s|m|h|d]]   (reads from stdin)\n"
         "\n"
+        "OAuth:\n"
+        "  login-oauth  [--client-id <id>] [--ttl <number>[s|m|h|d]]\n"
+        "\n"
         "Admin:\n"
         "  newuser      --username <name> [--assert <scope> ...]\n"
         "  deluser      --username <name>\n"
@@ -60,7 +63,9 @@ static void usage() {
         "  list-tokens\n"
         "  revoke-token <token_id>\n"
         "  revoke-tokens <username>\n"
-        "  revoke-all\n";
+        "  revoke-all\n"
+        "  oauth-setup  --username <name> [--save]\n"
+        "  oauth-revoke --username <name>\n";
 }
 
 int main(int argc, char** argv) {
@@ -104,7 +109,9 @@ int main(int argc, char** argv) {
         amanda::HttpClient client(cfg, insecure, cfg.cacert);
 
         if (curl_mode) {
-            std::string tok = client.has_token() ? client.token_b64() : "";
+            std::string tok = client.has_oauth_token() ? client.oauth_bearer()
+                            : client.has_token()        ? client.token_b64()
+                            : "";
             amanda::CurlEmitter emitter(cfg, insecure, tok);
 
             if      (command == "login")      emitter.emit_login(cmd_args);
@@ -157,6 +164,9 @@ int main(int argc, char** argv) {
         else if (command == "revoke-token")  amanda::cmd_revoke_token(client, cfg, cmd_args);
         else if (command == "revoke-tokens") amanda::cmd_revoke_tokens(client, cfg, cmd_args);
         else if (command == "revoke-all")    amanda::cmd_revoke_all(client, cfg, cmd_args);
+        else if (command == "oauth-setup")   amanda::cmd_oauth_setup(client, cfg, cmd_args);
+        else if (command == "oauth-revoke")  amanda::cmd_oauth_revoke(client, cfg, cmd_args);
+        else if (command == "login-oauth")   amanda::cmd_login_oauth(client, cfg, cmd_args);
         else if (command == "wrap")          amanda::cmd_wrap(client, cfg, cmd_args);
         else if (command == "bearer-token")  amanda::cmd_bearer_token(client, cfg, cmd_args);
         else if (command == "util-cacert")   amanda::cmd_util_cacert(client, cfg, cmd_args);
